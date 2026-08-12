@@ -220,8 +220,16 @@ pub fn solve(puzzle: &Puzzle, mode: SolveMode, observer: &mut dyn Observer) -> S
             };
         }
         StrategyRun::Solved(grid) => {
-            // A ladder solution needs no uniqueness search: the ladder
-            // only ever makes forced deductions.
+            // "No empty cells" is not the same as "valid": strategies
+            // fill cells from local rules and can complete a grid that
+            // breaks a global rule (found by the M7 fuzzer on ".10.").
+            if let Some(v) = validate_solution(&grid, &regions).into_iter().next() {
+                return SolveOutcome::Contradiction {
+                    reason: ContradictionReason::Invalid(v),
+                };
+            }
+            // A valid ladder solution needs no uniqueness search: the
+            // ladder only ever makes forced deductions.
             stats.deductions = counting.deductions;
             stats.max_tier = counting.max_tier;
             counting.inner.on_event(&SolveEvent::SolutionFound);

@@ -133,6 +133,70 @@ fn k5_every_corpus_puzzle_solves_and_proves_unique() {
     }
 }
 
+/// Regression (found by the M7 solver fuzzer, 2026-08-12): the ladder
+/// treated "no empty cells left" as solved without validating, so a
+/// puzzle whose forced filling breaks the uniqueness rule was reported
+/// as Solved with an invalid grid. Input ".10." forces both rows of a
+/// 2x2 to "01".
+#[test]
+fn k6_ladder_completion_must_still_satisfy_every_rule() {
+    let puzzle = parse_line(".10.").unwrap();
+    let outcome = solve(&puzzle, SolveMode::FirstSolution, &mut NullObserver);
+    match outcome {
+        SolveOutcome::Contradiction { reason } => {
+            assert!(
+                reason.to_string().contains("identical"),
+                "should name the duplicate lines: {reason}"
+            );
+        }
+        SolveOutcome::Solved { solution, .. } => {
+            use binsolve_core::region::validate_solution;
+            let violations = validate_solution(&solution, &puzzle.regions());
+            panic!(
+                "reported Solved with an invalid grid ({} violation(s), first: {})",
+                violations.len(),
+                violations
+                    .first()
+                    .map(|v| v.to_string())
+                    .unwrap_or_default()
+            );
+        }
+        other => panic!("unexpected outcome: {other:?}"),
+    }
+}
+
+/// Any Solved outcome must satisfy every rule, for every corpus-sized
+/// grid the fuzzer might explore (property form of the regression).
+#[test]
+fn k6_solved_outcomes_are_always_valid() {
+    let cases = [
+        ".10.",
+        "0110",
+        "01..",
+        "....",
+        "10..01..",
+        "0.1.1.0.",
+        "0.0.0.0.0.0.0.0.",
+        ".1.0.0.1........",
+    ];
+    for case in cases {
+        let Ok(puzzle) = parse_line(case) else {
+            continue;
+        };
+        if let SolveOutcome::Solved { solution, .. } =
+            solve(&puzzle, SolveMode::FirstSolution, &mut NullObserver)
+        {
+            use binsolve_core::region::validate_solution;
+            let violations = validate_solution(&solution, &puzzle.regions());
+            assert!(
+                violations.is_empty(),
+                "{case}: solved grid violates rules: {}",
+                violations[0]
+            );
+        }
+    }
+}
+
 #[test]
 fn k4_near_empty_adversarial_grid_solves() {
     // One given only: search must still terminate with a valid grid.
