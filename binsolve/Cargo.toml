@@ -7,3 +7,6 @@ license.workspace = true
 
 [dependencies]
 binsolve-core = { path = "../binsolve-core" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+thiserror = "2"
