@@ -1,1 +1,423 @@
-//! region module — implemented from L1 onward (see docs/REALIZATION_PLAN.md).
+//! Regions and rule sets: the AR3 model. A puzzle is one grid plus a
+//! list of overlapping square regions; every rule is checked per
+//! region, never on the raw grid.
+
+use crate::grid::{Cell, Grid};
+use std::fmt;
+
+/// Which of the three rule families a region enforces. All-on for every
+/// known puzzle type (empirically verified against published solutions,
+/// 2026-08-12); the mask exists so a counter-example is a data fix.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RuleSet {
+    pub balance: bool,
+    pub no_triples: bool,
+    pub unique_lines: bool,
+}
+
+impl RuleSet {
+    pub const ALL: RuleSet = RuleSet {
+        balance: true,
+        no_triples: true,
+        unique_lines: true,
+    };
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Region {
+    pub row: usize,
+    pub col: usize,
+    pub n: usize,
+    pub rules: RuleSet,
+}
+
+impl Region {
+    fn all(row: usize, col: usize, n: usize) -> Self {
+        Region {
+            row,
+            col,
+            n,
+            rules: RuleSet::ALL,
+        }
+    }
+
+    /// Cells of one line of this region, in grid coordinates.
+    pub fn line_cells(&self, grid: &Grid, is_row: bool, index: usize) -> Vec<Cell> {
+        (0..self.n)
+            .map(|i| {
+                if is_row {
+                    grid.get(self.row + index, self.col + i)
+                } else {
+                    grid.get(self.row + i, self.col + index)
+                }
+            })
+            .collect()
+    }
+}
+
+/// The five special types (K2a–K2e) plus standard n×n.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PuzzleKind {
+    Standard { n: usize },
+    FourTimes6x6,
+    FourTimes8x8,
+    NineTimes6x6,
+    EightIn14,
+    SixIn10In14,
+}
+
+impl PuzzleKind {
+    pub fn from_tag(tag: &str) -> Option<Self> {
+        match tag {
+            "4x6x6" => Some(PuzzleKind::FourTimes6x6),
+            "4x8x8" => Some(PuzzleKind::FourTimes8x8),
+            "9x6x6" => Some(PuzzleKind::NineTimes6x6),
+            "8in14" => Some(PuzzleKind::EightIn14),
+            "6in10in14" => Some(PuzzleKind::SixIn10In14),
+            _ => None,
+        }
+    }
+
+    pub fn tag(&self) -> Option<&'static str> {
+        match self {
+            PuzzleKind::Standard { .. } => None,
+            PuzzleKind::FourTimes6x6 => Some("4x6x6"),
+            PuzzleKind::FourTimes8x8 => Some("4x8x8"),
+            PuzzleKind::NineTimes6x6 => Some("9x6x6"),
+            PuzzleKind::EightIn14 => Some("8in14"),
+            PuzzleKind::SixIn10In14 => Some("6in10in14"),
+        }
+    }
+
+    pub fn grid_size(&self) -> usize {
+        match self {
+            PuzzleKind::Standard { n } => *n,
+            PuzzleKind::FourTimes6x6 => 12,
+            PuzzleKind::FourTimes8x8 => 16,
+            PuzzleKind::NineTimes6x6 => 18,
+            PuzzleKind::EightIn14 | PuzzleKind::SixIn10In14 => 14,
+        }
+    }
+
+    /// The AR3 region decomposition. Tiled types list their blocks plus
+    /// the whole grid; nested types list the concentric grids.
+    pub fn regions(&self) -> Vec<Region> {
+        match self {
+            PuzzleKind::Standard { n } => vec![Region::all(0, 0, *n)],
+            PuzzleKind::FourTimes6x6 => tiled(2, 6),
+            PuzzleKind::FourTimes8x8 => tiled(2, 8),
+            PuzzleKind::NineTimes6x6 => tiled(3, 6),
+            PuzzleKind::EightIn14 => {
+                vec![Region::all(3, 3, 8), Region::all(0, 0, 14)]
+            }
+            PuzzleKind::SixIn10In14 => {
+                vec![
+                    Region::all(4, 4, 6),
+                    Region::all(2, 2, 10),
+                    Region::all(0, 0, 14),
+                ]
+            }
+        }
+    }
+}
+
+fn tiled(blocks_per_side: usize, block_n: usize) -> Vec<Region> {
+    let whole = blocks_per_side * block_n;
+    let mut regions = Vec::with_capacity(blocks_per_side * blocks_per_side + 1);
+    for br in 0..blocks_per_side {
+        for bc in 0..blocks_per_side {
+            regions.push(Region::all(br * block_n, bc * block_n, block_n));
+        }
+    }
+    regions.push(Region::all(0, 0, whole));
+    regions
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Puzzle {
+    pub kind: PuzzleKind,
+    pub givens: Grid,
+}
+
+impl Puzzle {
+    pub fn regions(&self) -> Vec<Region> {
+        self.kind.regions()
+    }
+}
+
+/// One concrete rule violation, locatable and explainable (K6, M3).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Violation {
+    Incomplete {
+        empty_cells: usize,
+    },
+    Imbalance {
+        region: Region,
+        is_row: bool,
+        index: usize,
+        zeros: usize,
+        ones: usize,
+    },
+    Triple {
+        region: Region,
+        is_row: bool,
+        index: usize,
+        start: usize,
+        value: Cell,
+    },
+    DuplicateLines {
+        region: Region,
+        is_row: bool,
+        first: usize,
+        second: usize,
+    },
+    GivenChanged {
+        row: usize,
+        col: usize,
+        given: Cell,
+        found: Cell,
+    },
+}
+
+impl fmt::Display for Violation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fn line_name(is_row: bool, region: &Region, index: usize) -> String {
+            let kind = if is_row { "row" } else { "column" };
+            let abs = if is_row {
+                region.row + index
+            } else {
+                region.col + index
+            };
+            if region.row == 0 && region.col == 0 {
+                format!("{kind} {abs}")
+            } else {
+                format!(
+                    "{kind} {abs} (within the {n}x{n} region at r{r},c{c})",
+                    n = region.n,
+                    r = region.row,
+                    c = region.col
+                )
+            }
+        }
+        match self {
+            Violation::Incomplete { empty_cells } => write!(
+                f,
+                "grid is not completely filled: {empty_cells} empty cell(s) remain"
+            ),
+            Violation::Imbalance {
+                region,
+                is_row,
+                index,
+                zeros,
+                ones,
+            } => write!(
+                f,
+                "{} has {zeros} zeros and {ones} ones; each line needs exactly {} of each",
+                line_name(*is_row, region, *index),
+                region.n / 2
+            ),
+            Violation::Triple {
+                region,
+                is_row,
+                index,
+                start,
+                value,
+            } => write!(
+                f,
+                "{} has three consecutive {}s starting at position {start}; at most two may touch",
+                line_name(*is_row, region, *index),
+                value.to_char()
+            ),
+            Violation::DuplicateLines {
+                region,
+                is_row,
+                first,
+                second,
+            } => {
+                let kind = if *is_row { "rows" } else { "columns" };
+                write!(
+                    f,
+                    "{kind} {} and {} of the {n}x{n} region at r{r},c{c} are identical; every line must be unique",
+                    first,
+                    second,
+                    n = region.n,
+                    r = region.row,
+                    c = region.col
+                )
+            }
+            Violation::GivenChanged {
+                row,
+                col,
+                given,
+                found,
+            } => write!(
+                f,
+                "cell r{row},c{col} was given as {} but the solution has {}; givens may not change",
+                given.to_char(),
+                found.to_char()
+            ),
+        }
+    }
+}
+
+/// Check a completely filled grid against every region rule (M3 core).
+/// Returns every violation found, empty = valid.
+pub fn validate_solution(grid: &Grid, regions: &[Region]) -> Vec<Violation> {
+    let mut violations = Vec::new();
+    let empty = grid.cells().iter().filter(|c| c.is_empty()).count();
+    if empty > 0 {
+        violations.push(Violation::Incomplete { empty_cells: empty });
+        return violations;
+    }
+    for region in regions {
+        for is_row in [true, false] {
+            let lines: Vec<Vec<Cell>> = (0..region.n)
+                .map(|i| region.line_cells(grid, is_row, i))
+                .collect();
+            for (index, line) in lines.iter().enumerate() {
+                if region.rules.balance {
+                    let zeros = line.iter().filter(|c| **c == Cell::Zero).count();
+                    let ones = line.len() - zeros;
+                    if zeros != ones {
+                        violations.push(Violation::Imbalance {
+                            region: *region,
+                            is_row,
+                            index,
+                            zeros,
+                            ones,
+                        });
+                    }
+                }
+                if region.rules.no_triples {
+                    for start in 0..line.len().saturating_sub(2) {
+                        if line[start] == line[start + 1] && line[start] == line[start + 2] {
+                            violations.push(Violation::Triple {
+                                region: *region,
+                                is_row,
+                                index,
+                                start,
+                                value: line[start],
+                            });
+                        }
+                    }
+                }
+            }
+            if region.rules.unique_lines {
+                for first in 0..lines.len() {
+                    for second in (first + 1)..lines.len() {
+                        if lines[first] == lines[second] {
+                            violations.push(Violation::DuplicateLines {
+                                region: *region,
+                                is_row,
+                                first,
+                                second,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+    violations
+}
+
+/// Check that a solution preserves every given (M3 core).
+pub fn validate_givens(givens: &Grid, solution: &Grid) -> Vec<Violation> {
+    let n = givens.size();
+    let mut violations = Vec::new();
+    for r in 0..n {
+        for c in 0..n {
+            let g = givens.get(r, c);
+            if !g.is_empty() && g != solution.get(r, c) {
+                violations.push(Violation::GivenChanged {
+                    row: r,
+                    col: c,
+                    given: g,
+                    found: solution.get(r, c),
+                });
+            }
+        }
+    }
+    violations
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parse::parse_grid_chars;
+
+    fn grid(s: &str, n: usize) -> Grid {
+        Grid::from_cells(n, parse_grid_chars(s).unwrap())
+    }
+
+    #[test]
+    fn k2_region_decompositions_have_expected_shapes() {
+        assert_eq!(PuzzleKind::Standard { n: 8 }.regions().len(), 1);
+        assert_eq!(PuzzleKind::FourTimes6x6.regions().len(), 5);
+        assert_eq!(PuzzleKind::FourTimes8x8.regions().len(), 5);
+        assert_eq!(PuzzleKind::NineTimes6x6.regions().len(), 10);
+        assert_eq!(PuzzleKind::EightIn14.regions().len(), 2);
+        assert_eq!(PuzzleKind::SixIn10In14.regions().len(), 3);
+        // The nested 6x6 sits centered: offset (14-6)/2 = 4.
+        let inner = PuzzleKind::SixIn10In14.regions()[0];
+        assert_eq!((inner.row, inner.col, inner.n), (4, 4, 6));
+    }
+
+    #[test]
+    fn m3_valid_4x4_passes() {
+        // Rows 0011/1100/0101/1010: unique, balanced, triple-free —
+        // and so are the columns.
+        let g = grid("0011110001011010", 4);
+        let regions = PuzzleKind::Standard { n: 4 }.regions();
+        assert!(validate_solution(&g, &regions).is_empty());
+    }
+
+    #[test]
+    fn m3_k6_imbalance_named() {
+        let g = grid("0110100101100110", 4);
+        let regions = PuzzleKind::Standard { n: 4 }.regions();
+        let v = validate_solution(&g, &regions);
+        assert!(!v.is_empty());
+        let text = v
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(
+            text.contains("identical") || text.contains("zeros"),
+            "{text}"
+        );
+    }
+
+    #[test]
+    fn m3_k6_triple_detected_and_named() {
+        // Row 0 of a 4x4 with three zeros: 0001 — triple at start.
+        let g = grid("0001111000010111", 4);
+        let regions = PuzzleKind::Standard { n: 4 }.regions();
+        let v = validate_solution(&g, &regions);
+        assert!(v.iter().any(|x| matches!(x, Violation::Triple { .. })));
+        let text = v
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<_>>()
+            .join(" ");
+        assert!(text.contains("three consecutive"), "{text}");
+    }
+
+    #[test]
+    fn m3_given_changed_detected() {
+        let givens = grid("0...............", 4);
+        let solution = grid("1010010110100101", 4);
+        let v = validate_givens(&givens, &solution);
+        assert_eq!(v.len(), 1);
+        assert!(v[0].to_string().contains("givens may not change"));
+    }
+
+    #[test]
+    fn m3_incomplete_detected() {
+        let g = grid("0110.00101101001", 4);
+        let regions = PuzzleKind::Standard { n: 4 }.regions();
+        let v = validate_solution(&g, &regions);
+        assert!(matches!(v[0], Violation::Incomplete { empty_cells: 1 }));
+    }
+}
