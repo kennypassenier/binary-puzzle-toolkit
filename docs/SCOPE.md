@@ -49,10 +49,20 @@ the one-line dot-format contract (binsolve G6).
   binsolve's tag vocabulary is frozen at the five known types: before
   any invented type is emitted, its tag is added via a formal
   mini-round on binsolve's frozen S6b decision. *(S7)*
-- **G8 · Performance.** Repeatable benchmark on Kenny's PC: one
-  very-hard 14x14 in < 10 s; a 100-puzzle 10x10 batch in < 60 s; any
-  single special type in < 30 s. Larger invented sizes may take longer;
-  their measured cost is documented, not capped. *(D3)*
+- **G8 · Performance.** Repeatable benchmark on Kenny's PC. *(D3)*
+
+  > **Amendment 2026-08-12 (Phase 4, AR6).** The original figures — one
+  > very-hard 14x14 < 10 s; a 100-puzzle 10x10 batch < 60 s; any single
+  > special < 30 s — are **provisional**. Measurement against a probe
+  > implementation showed `4x8x8` at 41.3 s and 120× seed-to-seed
+  > spread, but those numbers came from carve-to-locally-minimal, the
+  > strategy AR4 rejects; the tier-ceiling carve keeps more clues and
+  > should be materially faster. Frozen instead is the *mechanism*: per
+  > (geometry, level), median and p95 over 20 seeds recorded in a
+  > baseline file; CI fails on a p95 regression beyond 1.5×; every
+  > request carries a work-unit ceiling so nothing runs unbounded. The
+  > numbers are measured and recorded as a milestone exit criterion
+  > once the carve loop exists.
 
 ## Non-goals
 
@@ -126,3 +136,9 @@ existing tool or engine is adopted.
 | 2026-08-12 | Scope approved (all items unchanged); direction = generator only, scraping dropped |
 | 2026-08-12 | Project name: **binforge** |
 | 2026-08-12 | Location: fresh repo at `~/Projects/binforge`, old scraper repo stays archived |
+
+## Cross-project dependencies (Phase 4)
+
+binforge blocks on five binsolve mini-rounds (B1 choice oracle, B2
+custom geometry, B3 rectangular regions, B4 node budget, B5 git rev in
+`--version`). See `docs/ARCHITECTURE_DECISIONS.md`.

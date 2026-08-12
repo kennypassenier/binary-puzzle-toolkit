@@ -16,9 +16,9 @@ work here (standing rule 19).
 
 | Field | Value |
 |---|---|
-| Current phase | 4 · Architecture |
-| Last completed gate | Phase 3 tech choice T1-T12 decided (2026-08-12) |
-| Next gate | Phase 4 architecture decision form (after architecture-critic) |
+| Current phase | 5 · Realization plan |
+| Last completed gate | Phase 4 architecture FROZEN, AR1-AR13 + 5 binsolve mini-rounds queued (2026-08-12) |
+| Next gate | Phase 5 realization plan approval form |
 | AFK mode | off |
 
 <!-- Update this block after every completed gate. -->

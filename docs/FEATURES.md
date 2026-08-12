@@ -55,21 +55,49 @@ geometries are rejected with a remedy-carrying message.
 definitions produce remedy-carrying errors; infeasible geometry is
 rejected rather than looped on.
 
-### K5 · Difficulty measurement — four technique tiers
-Grade by solving with binsolve-core strategies enabled tier by tier;
-label = lowest tier that cracks it. Tier membership is fixed in Phase 4
-and versioned: same tier-version ⇒ same label, reproducibly.
-**Tests:** fixed reference set per tier as regression anchors; tier
+### K5 · Difficulty measurement — four levels
+Grade by solving with binsolve-core strategies; label = the ladder
+level required. Levels are versioned: same level-version ⇒ same label,
+reproducibly.
+**Tests:** fixed reference set per level as regression anchors; level
 recomputation of a sample in CI.
+
+> **Amendment 2026-08-12 (Phase 4 mini-round).** The original wording
+> defined four *technique tiers* (1 direct fills · 2 counting
+> interplay · 3 unique-line eliminations · 4 deep contradiction
+> chains). binsolve's `registry_stages()` puts tier 1 (`FindDuo`,
+> `AvoidTriple`) and tier 2 (`FillByCount`) in the **same ladder
+> stage**, and the ladder exhausts a stage before escalating, so
+> `max_tier == 1` is unobservable — 0 occurrences in ~300 measured
+> re-grades. The scale is redefined onto binsolve's actual ladder:
+> **L1** stage 0 suffices · **L2** stage 1 needed (`KeepLineUnique` /
+> `CountingArgument`) · **L3** stage 2 needed (`FillPossibilities`) ·
+> **L4** guessing required. Measurable today with one
+> `SolveMode::StrategiesOnly` call and no binsolve change. Nothing was
+> built against the old wording. Level membership is owned by binsolve,
+> so the manifest records binsolve's pinned rev and a build-time hash
+> over its `(StrategyId, tier, stage)` table; a change without a
+> version bump fails loudly.
 
 ### K6 · Difficulty targeting
 Request type/size + tier; the carve loop steers (clue choice,
 fresh-solution retries) until measured tier equals requested tier,
 within the K11 time budget. An unreachable tier is reported explicitly
 — never a silently mislabeled puzzle.
-**Tests:** per standard size and tier 1–3, batches where every measured
-tier matches; tier-4 reachability documented per geometry;
-unreachable-tier path returns the explicit error.
+**Tests:** per standard size and level L1–L3, batches where every
+measured level matches; L4 reachability documented per geometry;
+unreachable-level path returns the explicit error.
+
+> **Amendment 2026-08-12 (Phase 4).** "Tier" reads "level" per K5's
+> amendment, and the bound is in deterministic work units, not a time
+> budget (a wall-clock bound would fire at different points in parallel
+> and sequential runs, falsifying M1 and M3). Targeting is achieved by
+> the AR4 tier-ceiling carve — restore-and-lock a group whose removal
+> pushes the grade past the target — not by post-hoc repair: measured
+> evidence showed restoring clues does *not* monotonically lower
+> difficulty (10x10 seed 6: +1→L3, +5→L4, +10→L3, +13→L2), so the
+> original repair loop could thrash and then falsely report a level
+> unreachable, violating D2.
 
 ### K7 · Dot-format output, puzzles + solutions
 binsolve's G6 contract exactly: one line per puzzle, `.` for empty,
@@ -121,8 +149,17 @@ Every run takes an RNG seed (auto-generated if unspecified), printed
 and stored with the batch; same seed + same version ⇒ byte-identical
 puzzle set. The debuggability foundation for a randomized program
 (standing rule 8).
-**Tests:** same seed twice ⇒ identical output; different seeds ⇒
-different output; a failing case's seed reproduces it.
+**Tests:** same seed twice into an empty directory ⇒ identical output;
+different seeds ⇒ different output; a failing case's
+`(seed, index, attempt)` reproduces it.
+
+> **Amendment 2026-08-12 (Phase 4, AR9).** Reproducibility is stated as
+> *same seed + same version + same starting corpus*. The RNG stream is
+> a function of `(batch seed, index, attempt)`; a duplicate increments
+> `attempt`, so a run into a populated directory reproduces
+> deterministically but differs from a run into an empty one. Every
+> puzzle's triple is recorded in the manifest, so any single puzzle
+> stays independently regenerable.
 
 ## Desired
 
@@ -132,7 +169,15 @@ the target corpus. Small grids have a finite space and silent repeats
 weaken a test corpus.
 **Tests:** no duplicate lines in a batch; re-running into an existing
 corpus adds only new puzzles; collisions reported, not silently
-skipped.
+skipped; re-rolls resolved in index order so parallel equals
+sequential.
+
+> **Amendment 2026-08-12 (Phase 4, AR9).** A collision is resolved by a
+> **deterministic re-roll** (attempt counter in the RNG stream), not by
+> refusing the write: under AR10's all-or-nothing batches a refusal
+> would fail the whole batch. Collisions must resolve in ascending
+> index order — completion order would make the outcome depend on which
+> rayon worker finished first.
 
 ### M3 · Parallel generation
 Generate independent puzzles across CPU cores, with deterministic
@@ -169,7 +214,16 @@ Progress on interactive terminals (n/N, elapsed, current geometry),
 silence when piped, and Ctrl-C finishing the current puzzle and
 writing what is done.
 **Tests:** piped output free of progress noise; simulated cancellation
-leaves a complete, valid partial batch plus manifest.
+leaves a complete, valid partial batch plus a manifest with
+`status: cancelled`.
+
+> **Amendment 2026-08-12 (Phase 4, AR10b).** Batches are otherwise
+> all-or-nothing: errors and crashes discard the batch. A deliberate
+> Ctrl-C is the single exception and is marked `status: cancelled` with
+> a non-zero exit, so a long run's work survives while no consumer can
+> mistake it for a complete batch. Responsiveness depends on binsolve
+> mini-round B4 (node budget) — without it, cancellation waits for the
+> current uniqueness proof, worst measured 15.9 s.
 
 ### M9 · Fuzz / property testing of the pipeline
 Property tests over random geometries, sizes and seeds asserting the
@@ -198,3 +252,5 @@ exist and tier definitions have settled.
 | 2026-08-12 | Round 1 (K1–K12, scope-derived): all Essential |
 | 2026-08-12 | Round 2 (M1–M10, Claude's proposals): M1 Essential; M2–M7, M9 Desired (M5 upgraded from Later by Kenny); M8, M10 Later |
 | 2026-08-12 | List frozen (freeze report R1–R3 approved) |
+| 2026-08-12 | Phase 4 mini-rounds: K5/K6 difficulty scale redefined onto binsolve's ladder (L1–L4); M1 reproducibility conditioned on the starting corpus; M2 collisions resolved by deterministic re-roll; M7 cancellation as the exception to all-or-nothing batches |
+| 2026-08-12 | K4/K9 acknowledged as blocked on binsolve mini-rounds B2 (custom geometry) and B3 (rectangular regions) — "no Rust change" holds for binforge, not for binsolve, until B2 lands |
