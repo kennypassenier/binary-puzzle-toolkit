@@ -106,6 +106,19 @@ the one-line dot-format contract (binsolve G6).
    Phase 2) generated, tagged and solved end-to-end by binsolve after
    the G7 tag mini-round. *(D4)*
 
+## Build-vs-buy record (Phase 1)
+
+Decided 2026-08-12 (gate form, all recommendations followed): **build
+our own generator end-to-end** on top of binsolve-core (C4). No
+existing tool or engine is adopted.
+
+| Alternative | Verdict | Reason |
+|---|---|---|
+| Borroot/binairo (Rust, GPL-3.0) | don't use | standard grids only; own solver + Z3 dep violates C4; unmaintained |
+| Simon Tatham's Unruly generator (C, MIT) | ideas, not code | proven generation loop + difficulty heuristics inform Phase 4 design; standard grids only, C |
+| Simple carve generators (Potherca, pollendo, …) | don't use | no technique grading, no uniqueness rigor, no composites, wrong language |
+| CSP/SAT backend for generation (Z3, varisat, …) | don't use | black-box solving guts the strategy trace G5 needs; duplicate engine next to binsolve-core |
+
 ## Decision log
 
 | Date | Decision |

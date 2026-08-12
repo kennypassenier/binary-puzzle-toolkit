@@ -16,9 +16,9 @@ work here (standing rule 19).
 
 | Field | Value |
 |---|---|
-| Current phase | 1 · Inventory & exploration |
-| Last completed gate | Phase 0 scope approved (2026-08-12) |
-| Next gate | Phase 1 build-vs-buy decision form (greenfield) |
+| Current phase | 2 · Features |
+| Last completed gate | Phase 1 build-vs-buy decided: build own, Unruly ideas-only (2026-08-12) |
+| Next gate | Phase 2 rating form round 1 (scope-derived features) |
 | AFK mode | off |
 
 <!-- Update this block after every completed gate. -->
