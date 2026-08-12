@@ -13,7 +13,7 @@ updated after every milestone gate.
 | L1 · Grid, regions & format | K7, M3-core, K6-part, M4-seed | done (2026-08-12, commit 5239591, CI green) |
 | L2 · Fixpoint + tier 1–2 + events | K3-part, K16-core | done (2026-08-12, commit 3d54b2c, CI green) |
 | L3 · Tier 3–4 + strategy-only | K3, M1 | done (2026-08-12, commit 398441d, CI green) |
-| L4 · Search, uniqueness, outcomes | K4, K5, K6 | not started |
+| L4 · Search, uniqueness, outcomes | K4, K5, K6 | done (2026-08-12, commit 96a88a8, CI green) |
 | L5 · The five special types | K2a–K2e | not started |
 | L6 · The CLI | K8–K12, K16, M3, M1-flag | not started |
 | L7 · Performance & difficulty | K13, M2, (M5 if benches demand) | not started |
