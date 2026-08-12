@@ -16,9 +16,9 @@ work here (standing rule 19).
 
 | Field | Value |
 |---|---|
-| Current phase | 2 · Features |
-| Last completed gate | Phase 1 build-vs-buy decided: build own, Unruly ideas-only (2026-08-12) |
-| Next gate | Phase 2 rating form round 1 (scope-derived features) |
+| Current phase | 3 · Tech choice |
+| Last completed gate | Phase 2 features FROZEN — 13 essential, 7 desired, 2 later (2026-08-12) |
+| Next gate | Phase 3 tech-choice decision form |
 | AFK mode | off |
 
 <!-- Update this block after every completed gate. -->
