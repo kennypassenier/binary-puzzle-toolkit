@@ -41,6 +41,38 @@ fn load_all() -> Vec<(String, Puzzle)> {
         .collect()
 }
 
+/// Regression (M7 fuzzer, 2026-08-12): sparse grids took seconds
+/// because DFS explored branches that had already broken a rule no
+/// strategy inspects (an over-filled line). These two inputs took
+/// 2.08 s and 0.56 s before partial validation was added to the search.
+#[test]
+fn k13_adversarial_sparse_inputs_stay_fast() {
+    let cases = [
+        // 10x10, 14 givens — solvable.
+        "...01...........01........1...0...0..1..................1...........0....1.........1..........0.1...",
+        // 8x8, 8 givens — contradictory, must be proven so.
+        ".1.......................0......0....1...........1.......1.1....",
+    ];
+    for case in cases {
+        let puzzle = binsolve_core::parse::parse_line(case).expect("valid input");
+        let started = Instant::now();
+        let _ = solve(&puzzle, SolveMode::FirstSolution, &mut NullObserver);
+        let elapsed = started.elapsed();
+        println!(
+            "adversarial {}x{} solved in {elapsed:.1?}",
+            puzzle.givens.size(),
+            puzzle.givens.size()
+        );
+        if cfg!(debug_assertions) {
+            continue;
+        }
+        assert!(
+            elapsed < Duration::from_millis(500),
+            "sparse input took {elapsed:.1?}, expected well under 500 ms"
+        );
+    }
+}
+
 #[test]
 fn k13_g5_thresholds() {
     let puzzles = load_all();

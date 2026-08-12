@@ -333,6 +333,14 @@ fn dfs(mut grid: Grid, depth: usize, ctx: &mut SearchCtx<'_>) -> bool {
     if ctx.counting() {
         ctx.stats.deductions += grid.filled_count() - before;
     }
+    // Strategies only ever act on empty cells, so a branch that has
+    // already over-filled a line, built a triple or duplicated a
+    // completed line stays invisible to them and would be explored to
+    // the bottom. Checking the partial grid prunes it immediately
+    // (found via the M7 fuzzer's slow units).
+    if !validate_partial(&grid, ctx.regions).is_empty() {
+        return false;
+    }
     if grid.is_complete() {
         if !validate_solution(&grid, ctx.regions).is_empty() {
             return false;
