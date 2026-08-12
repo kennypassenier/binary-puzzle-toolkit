@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu
+            os: ubuntu-latest
+          - name: windows
+            os: windows-latest
+          - name: archlinux
+            os: ubuntu-latest
+            container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain deps (Arch container)
+        if: matrix.name == 'archlinux'
+        run: pacman -Syu --noconfirm gcc curl git
+      - name: Install Rust (rustup, respects rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Format check
+        run: cargo fmt --all -- --check
+      - name: Clippy (warnings are errors)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Tests
+        run: cargo test --workspace
+
+  core-zero-deps:
+    name: core has no runtime dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assert binsolve-core [dependencies] is empty
+        run: |
+          python3 - <<'EOF'
+          import re, sys
+          text = open('binsolve-core/Cargo.toml').read()
+          m = re.search(r'^\[dependencies\]\s*(.*?)(?=^\[|\Z)', text, re.S | re.M)
+          deps = [l for l in (m.group(1).splitlines() if m else [])
+                  if l.strip() and not l.strip().startswith('#')]
+          if deps:
+              print('binsolve-core has runtime dependencies (AR1 violation):')
+              print('\n'.join(deps))
+              sys.exit(1)
+          print('OK: binsolve-core is dependency-free')
+          EOF

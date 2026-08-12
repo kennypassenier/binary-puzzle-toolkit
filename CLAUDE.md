@@ -15,9 +15,9 @@ work here (standing rule 19).
 
 | Field | Value |
 |---|---|
-| Current phase | 5 · Realization plan |
-| Last completed gate | Phase 4 architecture frozen, AR1-AR13 (2026-08-12) |
-| Next gate | Phase 5 approval form (milestones + standing rules + hooks) |
+| Current phase | 6 · Development loop (L0 next) |
+| Last completed gate | Phase 5 plan approved, enforcement installed (2026-08-12) |
+| Next gate | L0 milestone report form |
 | AFK mode | off |
 
 <!-- Update this block after every completed gate. -->
