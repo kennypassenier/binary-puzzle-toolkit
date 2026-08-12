@@ -16,9 +16,9 @@ work here (standing rule 19).
 
 | Field | Value |
 |---|---|
-| Current phase | 3 · Tech choice |
-| Last completed gate | Phase 2 features FROZEN — 13 essential, 7 desired, 2 later (2026-08-12) |
-| Next gate | Phase 3 tech-choice decision form |
+| Current phase | 4 · Architecture |
+| Last completed gate | Phase 3 tech choice T1-T12 decided (2026-08-12) |
+| Next gate | Phase 4 architecture decision form (after architecture-critic) |
 | AFK mode | off |
 
 <!-- Update this block after every completed gate. -->
