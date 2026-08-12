@@ -93,6 +93,18 @@ rewrite, not a port.
 4. The hardest puzzle Kenny can throw at it does not stump it — a
    failing "very hard" is by definition a bug. *(S14)*
 
+## Build-vs-buy record (Phase 1)
+
+Decided 2026-08-12 (gate form, all items unanimous): **build our own
+solver end-to-end.** No existing tool or embedded engine is adopted.
+
+| Alternative | Verdict | Reason |
+|---|---|---|
+| `takuzu` crate (letheed) | don't use | standard grids only; G2 specials are the point |
+| `binairo` crate (Marty3000) | don't use | unmaintained, no license, standard grids only |
+| Simon Tatham's "Unruly" (C) | don't use | C, standard grids only; strategy *ideas* may inform Phase 4 (ideas, not code) |
+| CSP/SAT backend (puzzle-solver, splr, varisat) | don't use | black-box solving guts the strategy trace (G7) and explainable errors; puzzles are tiny, hand-rolled propagation suffices for G5 |
+
 ## Decision log
 
 | Date | Decision |
