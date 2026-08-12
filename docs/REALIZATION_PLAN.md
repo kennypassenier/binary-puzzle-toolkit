@@ -16,7 +16,7 @@ updated after every milestone gate.
 | L4 · Search, uniqueness, outcomes | K4, K5, K6 | done (2026-08-12, commit 96a88a8, CI green) |
 | L5 · The five special types | K2a–K2e | done (2026-08-12, commit 627f9e5, CI green) |
 | L6 · The CLI | K8–K12, K16, M3, M1-flag | done (2026-08-12, commit 4bd822e, CI green) |
-| L7 · Performance & difficulty | K13, M2, (M5 if benches demand) | not started |
+| L7 · Performance & difficulty | K13, M2 | done (2026-08-12, commit 978837a, CI green; M5 not needed) |
 | L8 · Fuzzing | M7 | not started |
 | L9 · The TUI | K15 | not started |
 
