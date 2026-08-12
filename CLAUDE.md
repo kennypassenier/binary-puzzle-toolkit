@@ -15,9 +15,9 @@ work here (standing rule 19).
 
 | Field | Value |
 |---|---|
-| Current phase | 6 · Development loop (L7 built, gate pending) |
-| Last completed gate | L6 milestone report (2026-08-12) |
-| Next gate | L7 milestone report form (presented) |
+| Current phase | 6 · Development loop (L8 runs in progress, L9 built; gates pending) |
+| Last completed gate | L7 milestone report (2026-08-12) |
+| Next gate | L8 milestone report (after fuzz runs), then L9 |
 | AFK mode | off |
 
 <!-- Update this block after every completed gate. -->
