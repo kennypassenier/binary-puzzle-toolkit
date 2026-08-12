@@ -1,0 +1,8 @@
+[package]
+name = "binsolve-core"
+description = "Binary puzzle (Takuzu) solver core: grids, regions, strategies, search"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]

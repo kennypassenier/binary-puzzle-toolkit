@@ -1,0 +1,5 @@
+# Regression vectors and corpus files are byte-exact test data (AR7):
+# never let git translate their line endings, on any platform.
+tests/fixtures/** -text
+corpus/** -text
+**/tests/fixtures/** -text
