@@ -15,9 +15,9 @@ work here (standing rule 19).
 
 | Field | Value |
 |---|---|
-| Current phase | 3 · Tech choice |
-| Last completed gate | Phase 2 freeze report — features frozen, 17 essential (2026-08-12) |
-| Next gate | Phase 3 tech-choice decision form |
+| Current phase | 5 · Realization plan |
+| Last completed gate | Phase 4 architecture frozen, AR1-AR13 (2026-08-12) |
+| Next gate | Phase 5 approval form (milestones + standing rules + hooks) |
 | AFK mode | off |
 
 <!-- Update this block after every completed gate. -->
