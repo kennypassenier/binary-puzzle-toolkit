@@ -10,7 +10,7 @@ updated after every milestone gate.
 | Milestone | Features | Status |
 |---|---|---|
 | L0 · Walking skeleton | [meta] | done (2026-08-12, CI run 31565429775 green) |
-| L1 · Grid, regions & format | K7, M3-core, K6-part, M4-seed | not started |
+| L1 · Grid, regions & format | K7, M3-core, K6-part, M4-seed | done (2026-08-12, commit 5239591, CI green) |
 | L2 · Fixpoint + tier 1–2 + events | K3-part, K16-core | not started |
 | L3 · Tier 3–4 + strategy-only | K3, M1 | not started |
 | L4 · Search, uniqueness, outcomes | K4, K5, K6 | not started |
