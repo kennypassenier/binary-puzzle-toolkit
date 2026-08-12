@@ -116,6 +116,48 @@ pub struct SolveStats {
     pub deductions: usize,
     pub guesses: usize,
     pub backtracks: usize,
+    /// Highest strategy tier that produced a deduction (M2 input).
+    pub max_tier: u8,
+}
+
+/// M2 difficulty grade: the hardest reasoning the solver actually
+/// needed. Calibrated against binarypuzzle.com's own labels over the
+/// corpus (tests/difficulty.rs prints the table).
+///
+/// Three bands, not four: the site's "easy" and "medium" puzzles both
+/// fall to tier 1–2 strategies alone, so no measurement here separates
+/// them — `Easy` covers both. Site "hard" needs tier 3, site "very
+/// hard" needs tier 4 or guessing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Difficulty {
+    /// Local patterns and line counts suffice (site: easy or medium).
+    Easy,
+    /// Cross-line reasoning needed (site: hard).
+    Hard,
+    /// Line enumeration or guessing needed (site: very hard).
+    VeryHard,
+}
+
+impl Difficulty {
+    pub fn name(&self) -> &'static str {
+        match self {
+            Difficulty::Easy => "easy",
+            Difficulty::Hard => "hard",
+            Difficulty::VeryHard => "very hard",
+        }
+    }
+}
+
+/// Grade a solved puzzle from its stats (M2).
+pub fn grade(stats: &SolveStats) -> Difficulty {
+    if stats.guesses > 0 {
+        return Difficulty::VeryHard;
+    }
+    match stats.max_tier {
+        0..=2 => Difficulty::Easy,
+        3 => Difficulty::Hard,
+        _ => Difficulty::VeryHard,
+    }
 }
 
 /// Why a puzzle has no solution (K6): always concrete, never generic.
@@ -168,6 +210,7 @@ pub fn solve(puzzle: &Puzzle, mode: SolveMode, observer: &mut dyn Observer) -> S
     let mut counting = CountingObserver {
         inner: observer,
         deductions: 0,
+        max_tier: 0,
         counting: true,
     };
     let grid = match run_to_fixpoint(puzzle, &mut counting) {
@@ -180,6 +223,7 @@ pub fn solve(puzzle: &Puzzle, mode: SolveMode, observer: &mut dyn Observer) -> S
             // A ladder solution needs no uniqueness search: the ladder
             // only ever makes forced deductions.
             stats.deductions = counting.deductions;
+            stats.max_tier = counting.max_tier;
             counting.inner.on_event(&SolveEvent::SolutionFound);
             return SolveOutcome::Solved {
                 solution: grid,
@@ -194,6 +238,7 @@ pub fn solve(puzzle: &Puzzle, mode: SolveMode, observer: &mut dyn Observer) -> S
         }
     };
     stats.deductions = counting.deductions;
+    stats.max_tier = counting.max_tier;
     let want = match mode {
         SolveMode::FirstSolution => 1,
         _ => 2,
@@ -227,13 +272,17 @@ pub fn solve(puzzle: &Puzzle, mode: SolveMode, observer: &mut dyn Observer) -> S
 struct CountingObserver<'a> {
     inner: &'a mut dyn Observer,
     deductions: usize,
+    max_tier: u8,
     counting: bool,
 }
 
 impl Observer for CountingObserver<'_> {
     fn on_event(&mut self, event: &SolveEvent) {
-        if self.counting && matches!(event, SolveEvent::Deduced { .. }) {
+        if self.counting
+            && let SolveEvent::Deduced { strategy, .. } = event
+        {
             self.deductions += 1;
+            self.max_tier = self.max_tier.max(strategy.tier());
         }
         self.inner.on_event(event);
     }

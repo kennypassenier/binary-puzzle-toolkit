@@ -3,7 +3,7 @@
 
 use binsolve_core::grid::Grid;
 use binsolve_core::region::Puzzle;
-use binsolve_core::search::{SolveOutcome, SolveStats};
+use binsolve_core::search::{SolveOutcome, SolveStats, grade};
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -33,11 +33,15 @@ pub fn pretty_grid(grid: &Grid) -> String {
     grid.to_string()
 }
 
-/// The stats block shown on a terminal (K11).
+/// The stats block shown on a terminal (K11, M2).
 pub fn pretty_stats(stats: &SolveStats, elapsed: Duration, unique: Option<bool>) -> String {
     let mut out = format!(
-        "solved in {:.1?} — {} deductions, {} guesses, {} backtracks",
-        elapsed, stats.deductions, stats.guesses, stats.backtracks
+        "solved in {:.1?} — {} deductions, {} guesses, {} backtracks, graded {}",
+        elapsed,
+        stats.deductions,
+        stats.guesses,
+        stats.backtracks,
+        grade(stats).name()
     );
     match unique {
         Some(true) => out.push_str(", solution proven unique"),
