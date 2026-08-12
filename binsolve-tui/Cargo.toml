@@ -7,3 +7,7 @@ license.workspace = true
 
 [dependencies]
 binsolve-core = { path = "../binsolve-core" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+crossterm = "0.28"
+ratatui = "0.29"

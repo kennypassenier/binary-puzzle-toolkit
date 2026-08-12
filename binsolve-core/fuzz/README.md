@@ -12,7 +12,19 @@ Run from `binsolve-core/`:
 
 ```bash
 cargo +nightly fuzz run parse -- -max_total_time=3600
-cargo +nightly fuzz run solve -- -max_total_time=3600
+```
+
+The `solve` target is run in chunks, because libFuzzer's own
+instrumentation state grows past 6 GB after a few million executions
+on this target (measured: the solver itself peaks at 36 MB over 50,000
+consecutive solves in one process, so the growth is the harness, not
+the code). The corpus persists in `fuzz/corpus/solve/`, so coverage
+still accumulates across chunks:
+
+```bash
+for i in 1 2 3 4; do
+  cargo +nightly fuzz run solve -- -max_total_time=900 -rss_limit_mb=6144 -timeout=60
+done
 ```
 
 ## Targets
