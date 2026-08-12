@@ -84,6 +84,17 @@ fn format_reason(reason: &Reason) -> String {
             if *is_row { "row" } else { "column" },
             value.to_char()
         ),
+        Reason::UniqueSwap { is_row, other } => format!(
+            "filling like {} {other} would duplicate it, so the open cells take the opposite values",
+            if *is_row { "row" } else { "column" }
+        ),
+        Reason::CountInfeasible { tried } => format!(
+            "a {} here leaves no valid way to complete the line",
+            tried.to_char()
+        ),
+        Reason::Enumeration { survivors } => {
+            format!("all {survivors} valid completions of this line agree on this cell")
+        }
     }
 }
 

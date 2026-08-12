@@ -4,7 +4,7 @@
 use crate::event::{Observer, SolveEvent};
 use crate::grid::Grid;
 use crate::region::{Puzzle, Region};
-use crate::strategy::{Deduction, LineView, Strategy, registry};
+use crate::strategy::{Deduction, LineView, Strategy, registry_stages};
 
 /// Result of running strategies alone (M1's mode; L4 wraps this).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,22 +22,27 @@ pub enum StrategyRun {
     },
 }
 
-/// Apply the strategy registry over every line of every region until no
-/// deduction fires (fixpoint). Iteration order is fixed: regions in
+/// Apply the strategy stages over every line of every region until no
+/// deduction fires (fixpoint). A cheaper stage is exhausted before a
+/// costlier one runs, and any progress drops back to the cheapest stage
+/// (Tatham's ladder; AR5). Iteration order is fixed: regions in
 /// decomposition order, rows before columns, strategies in tier order
 /// (AR13 determinism).
 pub fn run_to_fixpoint(puzzle: &Puzzle, observer: &mut dyn Observer) -> StrategyRun {
     let mut grid = puzzle.givens.clone();
     let regions = puzzle.regions();
-    let strategies = registry();
-    loop {
-        match single_pass(&mut grid, &regions, &strategies, observer) {
-            PassResult::Contradiction { row, col } => {
-                return StrategyRun::Contradiction { row, col };
+    let stages = registry_stages();
+    'ladder: loop {
+        for stage in &stages {
+            match single_pass(&mut grid, &regions, stage, observer) {
+                PassResult::Contradiction { row, col } => {
+                    return StrategyRun::Contradiction { row, col };
+                }
+                PassResult::Changed => continue 'ladder,
+                PassResult::Fixpoint => {}
             }
-            PassResult::Changed => continue,
-            PassResult::Fixpoint => break,
         }
+        break;
     }
     if grid.is_complete() {
         StrategyRun::Solved(grid)
