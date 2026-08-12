@@ -15,9 +15,9 @@ work here (standing rule 19).
 
 | Field | Value |
 |---|---|
-| Current phase | 2 · Features |
-| Last completed gate | Phase 1 build-vs-buy form — build our own, unanimous (2026-08-12) |
-| Next gate | Phase 2 rating form, round 1 (existing/Kenny's features) |
+| Current phase | 3 · Tech choice |
+| Last completed gate | Phase 2 freeze report — features frozen, 17 essential (2026-08-12) |
+| Next gate | Phase 3 tech-choice decision form |
 | AFK mode | off |
 
 <!-- Update this block after every completed gate. -->
