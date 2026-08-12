@@ -171,6 +171,16 @@ pub enum Violation {
         first: usize,
         second: usize,
     },
+    /// More copies of a value than a line may ever hold (detectable on
+    /// a partially filled grid).
+    TooMany {
+        region: Region,
+        is_row: bool,
+        index: usize,
+        value: Cell,
+        count: usize,
+        max: usize,
+    },
     GivenChanged {
         row: usize,
         col: usize,
@@ -245,6 +255,19 @@ impl fmt::Display for Violation {
                     c = region.col
                 )
             }
+            Violation::TooMany {
+                region,
+                is_row,
+                index,
+                value,
+                count,
+                max,
+            } => write!(
+                f,
+                "{} already has {count} {}s but may hold at most {max}",
+                line_name(*is_row, region, *index),
+                value.to_char()
+            ),
             Violation::GivenChanged {
                 row,
                 col,
@@ -304,6 +327,71 @@ pub fn validate_solution(grid: &Grid, regions: &[Region]) -> Vec<Violation> {
             }
             if region.rules.unique_lines {
                 for first in 0..lines.len() {
+                    for second in (first + 1)..lines.len() {
+                        if lines[first] == lines[second] {
+                            violations.push(Violation::DuplicateLines {
+                                region: *region,
+                                is_row,
+                                first,
+                                second,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+    violations
+}
+
+/// Rule violations detectable on a PARTIALLY filled grid (K6): filled
+/// triples, over-count of one value, and duplicated completed lines.
+/// Empty = nothing provably wrong yet.
+pub fn validate_partial(grid: &Grid, regions: &[Region]) -> Vec<Violation> {
+    let mut violations = Vec::new();
+    for region in regions {
+        for is_row in [true, false] {
+            let lines: Vec<Vec<Cell>> = (0..region.n)
+                .map(|i| region.line_cells(grid, is_row, i))
+                .collect();
+            for (index, line) in lines.iter().enumerate() {
+                if region.rules.balance {
+                    for value in [Cell::Zero, Cell::One] {
+                        let count = line.iter().filter(|c| **c == value).count();
+                        if count > region.n / 2 {
+                            violations.push(Violation::TooMany {
+                                region: *region,
+                                is_row,
+                                index,
+                                value,
+                                count,
+                                max: region.n / 2,
+                            });
+                        }
+                    }
+                }
+                if region.rules.no_triples {
+                    for start in 0..line.len().saturating_sub(2) {
+                        if !line[start].is_empty()
+                            && line[start] == line[start + 1]
+                            && line[start] == line[start + 2]
+                        {
+                            violations.push(Violation::Triple {
+                                region: *region,
+                                is_row,
+                                index,
+                                start,
+                                value: line[start],
+                            });
+                        }
+                    }
+                }
+            }
+            if region.rules.unique_lines {
+                for first in 0..lines.len() {
+                    if lines[first].iter().any(|c| c.is_empty()) {
+                        continue;
+                    }
                     for second in (first + 1)..lines.len() {
                         if lines[first] == lines[second] {
                             violations.push(Violation::DuplicateLines {

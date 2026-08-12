@@ -1,10 +1,11 @@
-//! The solve engine. L2 scope: strategy passes to fixpoint (AR5's top
-//! level). The DFS stage and the full AR6 outcome type land in L4.
+//! The solve engine: strategy ladder to fixpoint, then DFS with
+//! cheap-tier propagation (AR5), producing the four AR6 outcomes.
 
 use crate::event::{Observer, SolveEvent};
-use crate::grid::Grid;
-use crate::region::{Puzzle, Region};
+use crate::grid::{Cell, Grid};
+use crate::region::{Puzzle, Region, Violation, validate_partial, validate_solution};
 use crate::strategy::{Deduction, LineView, Strategy, registry_stages};
+use std::fmt;
 
 /// Result of running strategies alone (M1's mode; L4 wraps this).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -95,6 +96,249 @@ enum Applied {
     None,
     Some,
     Contradiction { row: usize, col: usize },
+}
+
+/// How far the solver may go (AR5/AR6).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SolveMode {
+    /// M1: human strategies only, never guess.
+    StrategiesOnly,
+    /// K4: stop at the first solution.
+    FirstSolution,
+    /// K5: search past the first solution to prove it unique.
+    ProveUniqueness,
+}
+
+/// Work done up to the FIRST solution (AR8: uniqueness refutation work
+/// is excluded so M2 grading measures the puzzle, not the proof).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct SolveStats {
+    pub deductions: usize,
+    pub guesses: usize,
+    pub backtracks: usize,
+}
+
+/// Why a puzzle has no solution (K6): always concrete, never generic.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ContradictionReason {
+    /// The givens already break a rule.
+    Invalid(Violation),
+    /// Two sound deductions demand different values for one cell.
+    ConflictingDeductions { row: usize, col: usize },
+    /// Every assignment of the open cells breaks a rule somewhere.
+    Exhausted,
+}
+
+impl fmt::Display for ContradictionReason {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ContradictionReason::Invalid(v) => write!(f, "{v}"),
+            ContradictionReason::ConflictingDeductions { row, col } => write!(
+                f,
+                "cell r{row}c{col} is forced to both 0 and 1 by different rules"
+            ),
+            ContradictionReason::Exhausted => write!(
+                f,
+                "no assignment of the open cells satisfies all rules (search exhausted)"
+            ),
+        }
+    }
+}
+
+/// The AR6 outcome. `Stuck` only occurs in StrategiesOnly mode.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SolveOutcome {
+    Solved { solution: Grid, stats: SolveStats },
+    MultipleSolutions { first: Grid, second: Grid },
+    Contradiction { reason: ContradictionReason },
+    Stuck { grid: Grid, filled: usize },
+}
+
+/// Solve a puzzle (K4/K5/M1). Ladder first; if needed and allowed, DFS
+/// with cheap-tier propagation. Deterministic throughout (AR13).
+pub fn solve(puzzle: &Puzzle, mode: SolveMode, observer: &mut dyn Observer) -> SolveOutcome {
+    let regions = puzzle.regions();
+    let invalid = validate_partial(&puzzle.givens, &regions);
+    if let Some(v) = invalid.into_iter().next() {
+        return SolveOutcome::Contradiction {
+            reason: ContradictionReason::Invalid(v),
+        };
+    }
+    let mut stats = SolveStats::default();
+    let mut counting = CountingObserver {
+        inner: observer,
+        deductions: 0,
+        counting: true,
+    };
+    let grid = match run_to_fixpoint(puzzle, &mut counting) {
+        StrategyRun::Contradiction { row, col } => {
+            return SolveOutcome::Contradiction {
+                reason: ContradictionReason::ConflictingDeductions { row, col },
+            };
+        }
+        StrategyRun::Solved(grid) => {
+            // A ladder solution needs no uniqueness search: the ladder
+            // only ever makes forced deductions.
+            stats.deductions = counting.deductions;
+            counting.inner.on_event(&SolveEvent::SolutionFound);
+            return SolveOutcome::Solved {
+                solution: grid,
+                stats,
+            };
+        }
+        StrategyRun::Stuck { grid, filled } => {
+            if mode == SolveMode::StrategiesOnly {
+                return SolveOutcome::Stuck { grid, filled };
+            }
+            grid
+        }
+    };
+    stats.deductions = counting.deductions;
+    let want = match mode {
+        SolveMode::FirstSolution => 1,
+        _ => 2,
+    };
+    let mut ctx = SearchCtx {
+        regions: &regions,
+        stages: registry_stages(),
+        observer: counting.inner,
+        stats: &mut stats,
+        solutions: Vec::new(),
+        want,
+    };
+    dfs(grid, 0, &mut ctx);
+    let mut solutions = ctx.solutions;
+    match solutions.len() {
+        0 => SolveOutcome::Contradiction {
+            reason: ContradictionReason::Exhausted,
+        },
+        1 => SolveOutcome::Solved {
+            solution: solutions.pop().expect("one solution"),
+            stats,
+        },
+        _ => {
+            let second = solutions.pop().expect("two solutions");
+            let first = solutions.pop().expect("two solutions");
+            SolveOutcome::MultipleSolutions { first, second }
+        }
+    }
+}
+
+struct CountingObserver<'a> {
+    inner: &'a mut dyn Observer,
+    deductions: usize,
+    counting: bool,
+}
+
+impl Observer for CountingObserver<'_> {
+    fn on_event(&mut self, event: &SolveEvent) {
+        if self.counting && matches!(event, SolveEvent::Deduced { .. }) {
+            self.deductions += 1;
+        }
+        self.inner.on_event(event);
+    }
+}
+
+struct SearchCtx<'a> {
+    regions: &'a [Region],
+    stages: Vec<Vec<Box<dyn Strategy>>>,
+    observer: &'a mut dyn Observer,
+    stats: &'a mut SolveStats,
+    solutions: Vec<Grid>,
+    want: usize,
+}
+
+impl SearchCtx<'_> {
+    fn counting(&self) -> bool {
+        self.solutions.is_empty()
+    }
+}
+
+/// Depth-first search with cheap-tier propagation at every node (AR5).
+/// Returns true when enough solutions were found to stop.
+fn dfs(mut grid: Grid, depth: usize, ctx: &mut SearchCtx<'_>) -> bool {
+    // Propagate with the cheap stage only (tiers 1-2); deductions still
+    // reach the observer so traces show the search's reasoning.
+    let before = grid.filled_count();
+    loop {
+        let SearchCtx {
+            regions,
+            stages,
+            observer,
+            ..
+        } = ctx;
+        match single_pass(&mut grid, regions, &stages[0], *observer) {
+            PassResult::Contradiction { .. } => return false,
+            PassResult::Changed => continue,
+            PassResult::Fixpoint => break,
+        }
+    }
+    if ctx.counting() {
+        ctx.stats.deductions += grid.filled_count() - before;
+    }
+    if grid.is_complete() {
+        if !validate_solution(&grid, ctx.regions).is_empty() {
+            return false;
+        }
+        if ctx.solutions.iter().all(|s| *s != grid) {
+            ctx.observer.on_event(&SolveEvent::SolutionFound);
+            ctx.solutions.push(grid);
+        }
+        return ctx.solutions.len() >= ctx.want;
+    }
+    let Some((row, col)) = pick_guess_cell(&grid, ctx.regions) else {
+        return false;
+    };
+    for value in [Cell::Zero, Cell::One] {
+        let mut branch = grid.clone();
+        branch.set(row, col, value);
+        if ctx.counting() {
+            ctx.stats.guesses += 1;
+        }
+        ctx.observer.on_event(&SolveEvent::Guessed {
+            row,
+            col,
+            value,
+            depth,
+        });
+        if dfs(branch, depth + 1, ctx) {
+            return true;
+        }
+        if ctx.counting() {
+            ctx.stats.backtracks += 1;
+        }
+        ctx.observer.on_event(&SolveEvent::Backtracked {
+            to_depth: depth,
+            row,
+            col,
+        });
+    }
+    false
+}
+
+/// AR5 heuristic: the line (any region, rows before columns) with the
+/// fewest empty cells (>0); first such line on ties; guess its first
+/// empty cell.
+fn pick_guess_cell(grid: &Grid, regions: &[Region]) -> Option<(usize, usize)> {
+    let mut best: Option<(usize, (usize, usize))> = None;
+    for region in regions {
+        for is_row in [true, false] {
+            for index in 0..region.n {
+                let view = LineView::new(grid, *region, is_row, index);
+                let empties: Vec<usize> = (0..view.len())
+                    .filter(|i| view.cells()[*i].is_empty())
+                    .collect();
+                if empties.is_empty() {
+                    continue;
+                }
+                let cell = view.pos(empties[0]);
+                if best.is_none_or(|(count, _)| empties.len() < count) {
+                    best = Some((empties.len(), cell));
+                }
+            }
+        }
+    }
+    best.map(|(_, cell)| cell)
 }
 
 fn apply_deductions(
