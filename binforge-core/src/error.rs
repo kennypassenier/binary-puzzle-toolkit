@@ -65,19 +65,24 @@ impl fmt::Display for GeometryError {
                     "grid size is 0\n\
                      Remedy: set size to an even number of at least 2, e.g. size = 6."
                 ),
+                // Saturating on purpose: an absurd size still has to produce a
+                // message rather than panic on the arithmetic in it (AR6 — the
+                // core never panics on any input, however silly).
                 SizeProblem::Odd => write!(
                     f,
                     "grid size {size} is odd\n\
                      Remedy: binary puzzles need equal counts of 0 and 1 per line, \
                      so the side length must be even — use {} or {}.",
-                    size - 1,
-                    size + 1
+                    size.saturating_sub(1),
+                    size.saturating_add(1)
                 ),
                 SizeProblem::TooLarge { limit } => write!(
                     f,
-                    "grid size {size} exceeds the supported limit of {limit}\n\
-                     Remedy: use a smaller size; generation time grows steeply \
-                     with area and nothing above {limit} has been measured."
+                    "grid size {size} is beyond anything this tool can represent \
+                     (guard: {limit})\n\
+                     Remedy: use a realistic puzzle size. This guard only rejects \
+                     nonsense; how large a puzzle is *practical* is answered by the \
+                     measured generation times, not by this number."
                 ),
             },
             GeometryError::RegionOutOfBounds {

@@ -107,6 +107,27 @@ which in practice forces a pull-request workflow: a direct push to
 real workflow change, and enforcement changes are always a gate, so it
 is queued rather than applied.
 
+### D-L1d · The size guard versus scope G1
+
+Scope G1 says the practical size ceiling comes from the G8 performance
+measurements and is **never hardcoded**. My first version of the
+geometry validator contradicted that with a flat `MAX_SIZE = 32`, which
+a code review caught: it would have refused a 40x40 puzzle that the
+scope explicitly allows, on no evidence at all.
+
+**What I changed instead of asking.** The constant is now
+`MAX_SUPPORTED_SIZE = 256`, documented as a *resource guard against
+absurd input*, not a ceiling: without any bound a file containing
+`size = 4294967294` sends the renderer and the coverage scan into a loop
+over billions of rows. Every plausible size (16, 20, 24, 40, 100) is
+accepted and tested; how large a puzzle is *practical* stays an
+answer that L7's measurements give.
+
+**Ratify or correct:** if you would rather have no bound at all, the
+renderer and the coverage scan need a different defence against a
+nonsense file; if you want a lower one, it should come from measurement
+in L7 rather than from me picking a number.
+
 ### D-L1c · Geometry feasibility is not yet detectable
 
 K4 promises infeasible geometries are "rejected rather than looped on".

@@ -97,3 +97,28 @@ fn ar8_write_creates_missing_directories() {
     assert!(path.exists());
     std::fs::remove_dir_all(&dir).ok();
 }
+
+#[test]
+fn ar10_a_permanent_rename_failure_is_reported_without_five_retries() {
+    // The destination already exists as a directory: renaming onto it can
+    // never succeed, so retrying only delays the answer and blames a file
+    // lock that is not there.
+    let dir = scratch("permanent");
+    let blocked = dir.join("occupied");
+    std::fs::create_dir_all(blocked.join("child")).unwrap();
+
+    let started = std::time::Instant::now();
+    let error = atomic::write(&blocked, "x").unwrap_err();
+    let elapsed = started.elapsed();
+
+    let text = format!("{error:#}");
+    assert!(text.contains("Remedy:"), "{text}");
+    assert!(
+        !text.contains("after 5 attempts"),
+        "must not claim a retry storm: {text}"
+    );
+    // Five backoffs would take at least 200 ms; failing fast is the point.
+    assert!(elapsed.as_millis() < 150, "took {elapsed:?}, expected fast");
+
+    std::fs::remove_dir_all(&dir).ok();
+}

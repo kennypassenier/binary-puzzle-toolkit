@@ -13,6 +13,14 @@ fn label(index: usize) -> char {
 /// it, followed by a legend and a verdict. Every region gets a line, so
 /// an origin that is off by one shows up as a shifted block.
 pub fn render(geometry: &Geometry) -> String {
+    // `Geometry` has public fields, so an instance can reach here without
+    // ever passing `validate()`. Rendering an unchecked one would loop over
+    // whatever `size` claims to be; refusing with the remedy is the honest
+    // answer and keeps the promise that nothing hangs (AR10).
+    if let Err(error) = geometry.validate() {
+        return format!("this geometry cannot be rendered: {error}\n");
+    }
+
     let mut out = String::new();
 
     let tag = geometry.tag.as_deref().unwrap_or("(standard, untagged)");

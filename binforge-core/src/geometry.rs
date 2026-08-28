@@ -11,9 +11,13 @@
 use crate::error::{GeometryError, SizeProblem};
 use serde::Deserialize;
 
-/// Nothing above this has been measured, and generation cost grows with
-/// area; refusing early beats a run that never visibly ends (AR10).
-pub const MAX_SIZE: usize = 32;
+/// A resource guard against absurd input, NOT the practical size ceiling:
+/// scope G1 puts that ceiling in the G8 performance measurements and says
+/// it is never hardcoded. Without any bound a file saying
+/// `size = 9223372036854775806` would send the renderer and the coverage
+/// scan into a loop over 2^63 rows, so the guard sits far above any
+/// plausible puzzle (256x256 = 65 536 cells) and refuses only nonsense.
+pub const MAX_SUPPORTED_SIZE: usize = 256;
 
 /// Which Takuzu rules a region enforces. All three hold for every type
 /// known today; the toggles exist so a future counter-example is a data
@@ -141,10 +145,12 @@ impl Geometry {
                 reason: SizeProblem::Odd,
             });
         }
-        if self.size > MAX_SIZE {
+        if self.size > MAX_SUPPORTED_SIZE {
             return Err(GeometryError::GridSize {
                 size: self.size,
-                reason: SizeProblem::TooLarge { limit: MAX_SIZE },
+                reason: SizeProblem::TooLarge {
+                    limit: MAX_SUPPORTED_SIZE,
+                },
             });
         }
         if self.regions.is_empty() {

@@ -243,3 +243,48 @@ fn k4_innermost_region_wins_for_nested_types() {
 fn k4_rule_defaults_are_all_on() {
     assert_eq!(RuleSet::default(), RuleSet::ALL);
 }
+
+#[test]
+fn k4_a_plausible_large_size_is_accepted_not_capped() {
+    // Scope G1: sizes beyond the site's 14x14 are in scope, and the
+    // practical ceiling comes from measured generation time, never from a
+    // constant in the code. A review found an earlier 32-cell cap here.
+    for size in [16, 20, 24, 40, 100] {
+        assert!(
+            Geometry::standard(size).is_ok(),
+            "{size} should be representable"
+        );
+    }
+}
+
+#[test]
+fn k4_absurd_size_is_refused_before_anything_loops_over_it() {
+    // Without a guard this file would send the renderer and the coverage
+    // scan over 2^63 rows. The refusal is a resource guard, and its
+    // message says so rather than pretending to be a performance ceiling.
+    // Even, so it gets past the parity check and reaches the guard.
+    let absurd = format!("size = {}\nregions = []\n", u32::MAX - 1);
+    let err = Geometry::from_toml(&absurd).unwrap_err();
+    let text = err.to_string();
+    assert!(text.contains("guard"), "{text}");
+    assert!(text.contains("Remedy:"), "{text}");
+}
+
+#[test]
+fn ar6_error_messages_never_panic_on_absurd_input() {
+    // Found by the L1 review: the odd-size message computed size + 1 and
+    // overflowed on usize::MAX, so formatting the error crashed instead of
+    // reporting it. The core must survive any input, including silly ones.
+    for size in [usize::MAX, usize::MAX - 1, 0, 1] {
+        let err = GeometryError::GridSize {
+            size,
+            reason: if size % 2 == 0 {
+                SizeProblem::Zero
+            } else {
+                SizeProblem::Odd
+            },
+        };
+        let text = err.to_string();
+        assert!(text.contains("Remedy:"), "size {size}: {text}");
+    }
+}

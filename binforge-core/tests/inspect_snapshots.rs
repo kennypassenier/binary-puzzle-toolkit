@@ -38,3 +38,17 @@ cols = 6
     assert!(rendered.contains("Remedy:"), "{rendered}");
     insta::assert_snapshot!("uncovered_strip", rendered);
 }
+
+#[test]
+fn m6_render_refuses_an_unvalidated_geometry_instead_of_looping() {
+    // Geometry has public fields, so an unchecked instance can reach the
+    // renderer. It must answer, not loop over a bogus size.
+    let bogus = Geometry {
+        tag: None,
+        size: usize::MAX,
+        regions: vec![],
+    };
+    let rendered = inspect::render(&bogus);
+    assert!(rendered.contains("cannot be rendered"), "{rendered}");
+    assert!(rendered.contains("Remedy:"), "{rendered}");
+}

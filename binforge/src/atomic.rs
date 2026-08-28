@@ -10,6 +10,12 @@
 //! batch syncs its directory before writing the manifest and again after —
 //! without that, a crash could surface a manifest claiming files that are
 //! not there.
+//!
+//! Honest limitation: that directory sync is a Unix facility. On Windows
+//! std cannot open a directory to flush it, so the ordering guarantee
+//! there rests on the filesystem alone and is weaker than on Linux. C3
+//! makes Windows a supported platform, so this is recorded as a known
+//! limitation for the Phase 7 test plan rather than claimed as solved.
 
 // Built in L1 while the solver-dependent milestones were blocked, and
 // wired into the CLI in L5 where batches are actually written. Marked
@@ -52,7 +58,8 @@ pub fn write(path: &Path, contents: &str) -> Result<()> {
 
 /// Make the renames in `dir` durable. Called after the last file of a
 /// batch and again after the manifest, so "the manifest exists" really
-/// does imply "its files exist" (AR10).
+/// does imply "its files exist" (AR10). Effective on Unix; see the module
+/// note for why Windows gets a weaker guarantee.
 pub fn sync_dir(dir: &Path) -> Result<()> {
     // Only Unix can open a directory as a file; on Windows the rename is
     // already ordered by the filesystem, so this is a no-op there.
@@ -73,6 +80,11 @@ pub fn sync_dir(dir: &Path) -> Result<()> {
 
 /// Remove `.tmp` leftovers from an interrupted earlier run. Reported by
 /// count rather than silently, so a repeatedly crashing run is visible.
+///
+/// **Call this only before any writer starts.** It cannot tell an orphan
+/// from a temp file another worker is writing right now, so calling it
+/// while a parallel batch (M3) is running would delete work in flight and
+/// surface as a rename failure.
 pub fn clean_orphans(dir: &Path) -> Result<usize> {
     if !dir.exists() {
         return Ok(0);
@@ -96,13 +108,24 @@ fn temp_path(path: &Path) -> PathBuf {
     path.with_file_name(name)
 }
 
+/// Windows reports a held file as a permission error; everything else —
+/// a missing directory, a destination that is a directory — is permanent
+/// and retrying it only delays a failure while blaming the wrong cause.
+fn is_transient(error: &std::io::Error) -> bool {
+    matches!(error.kind(), std::io::ErrorKind::PermissionDenied)
+}
+
 fn rename_with_retry(from: &Path, to: &Path) -> Result<()> {
     let mut last_error = None;
     for attempt in 0..RENAME_ATTEMPTS {
         match fs::rename(from, to) {
             Ok(()) => return Ok(()),
             Err(error) => {
+                let transient = is_transient(&error);
                 last_error = Some(error);
+                if !transient {
+                    break;
+                }
                 if attempt + 1 < RENAME_ATTEMPTS {
                     std::thread::sleep(RENAME_BACKOFF * (attempt + 1));
                 }
@@ -111,10 +134,11 @@ fn rename_with_retry(from: &Path, to: &Path) -> Result<()> {
     }
     let error = last_error.expect("at least one attempt was made");
     Err(anyhow::Error::new(error).context(format!(
-        "cannot move {} into place as {} after {RENAME_ATTEMPTS} attempts\n\
-         Remedy: another program may be holding the file open (on Windows an \
-         indexer or virus scanner); close it and run again. The temp file is \
-         left behind and will be cleaned up by the next run.",
+        "cannot move {} into place as {}\n\
+         Remedy: if the destination is locked, another program may be holding \
+         it open (on Windows an indexer or virus scanner) — close it and run \
+         again; otherwise check that the path is writable and is not a \
+         directory. The temp file is left behind and the next run cleans it up.",
         from.display(),
         to.display()
     )))
