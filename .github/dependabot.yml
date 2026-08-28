@@ -1,0 +1,9 @@
+# Dependabot is deliberately off for this repo.
+#
+# The dependency policy (T3) is a strict allowlist that changes only by
+# mini-round, and the fuzz crate lives outside the cargo workspace on
+# purpose (it needs nightly), which Dependabot's cargo updater cannot
+# resolve — every run failed on it. Security advisories are handled by
+# reviewing the allowlist when a dependency is deliberately touched.
+version: 2
+updates: []
