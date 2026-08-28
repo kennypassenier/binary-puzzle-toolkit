@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["binsolve-core", "binsolve", "binsolve-tui"]
+members = ["bpt-core", "bpt-tui", "bpt"]
 
 [workspace.package]
 version = "1.0.0"

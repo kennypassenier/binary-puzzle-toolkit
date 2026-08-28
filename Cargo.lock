@@ -86,34 +86,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
-name = "binsolve"
-version = "1.0.0"
-dependencies = [
- "anyhow",
- "binsolve-core",
- "clap",
-]
-
-[[package]]
-name = "binsolve-core"
-version = "1.0.0"
-dependencies = [
- "criterion",
- "proptest",
-]
-
-[[package]]
-name = "binsolve-tui"
-version = "1.0.0"
-dependencies = [
- "anyhow",
- "binsolve-core",
- "clap",
- "crossterm",
- "ratatui",
-]
-
-[[package]]
 name = "bit-set"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -133,6 +105,34 @@ name = "bitflags"
 version = "2.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b588b76d00fde79687d7646a9b5bdf3cc0f655e0bbd080335a95d7e96f3587da"
+
+[[package]]
+name = "bpt"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "bpt-core",
+ "clap",
+]
+
+[[package]]
+name = "bpt-core"
+version = "1.0.0"
+dependencies = [
+ "criterion",
+ "proptest",
+]
+
+[[package]]
+name = "bpt-tui"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "bpt-core",
+ "clap",
+ "crossterm",
+ "ratatui",
+]
 
 [[package]]
 name = "bumpalo"

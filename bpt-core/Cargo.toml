@@ -1,0 +1,16 @@
+[package]
+name = "bpt-core"
+description = "Binary puzzle model and solver: grids, regions, strategies, search"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+
+[dev-dependencies]
+criterion = "0.5"
+proptest = "1"
+
+[[bench]]
+name = "solve"
+harness = false

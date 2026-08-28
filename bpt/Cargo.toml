@@ -1,0 +1,11 @@
+[package]
+name = "bpt"
+description = "BinaryPuzzleToolkit: solve, generate and inspect binary puzzles"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+bpt-core = { path = "../bpt-core" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
