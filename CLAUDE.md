@@ -38,3 +38,17 @@ Commits are blocked by `.claude/hooks/check-commit.sh` unless
 `.claude/hooks/gates.sh` passes and the message carries IDs in
 brackets (`[W12]`, `[L4b]`, `[meta]`). CI re-runs the same gates on
 every push; red blocks merge.
+
+## Enforcement layers
+
+Two layers, both live:
+
+1. **Git-native (primary, holds from any session/terminal):**
+   `.githooks/pre-commit` runs `.claude/hooks/gates.sh` (fmt, clippy
+   with warnings-as-errors, full test suite); `.githooks/commit-msg`
+   requires feature IDs in brackets. Wired via
+   `git config core.hooksPath .githooks` — a fresh clone must run that
+   once.
+2. **Claude Code PreToolUse hook** (`.claude/settings.json` →
+   `check-commit.sh`), which only loads in sessions opened in this
+   directory.

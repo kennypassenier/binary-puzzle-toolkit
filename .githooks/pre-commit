@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Git-native gate (Phase 5): runs the project's quality gates before
+# every commit, from ANY session, tool or terminal. The Claude Code
+# PreToolUse hook is a second layer, not the only one.
+set -uo pipefail
+
+root=$(git rev-parse --show-toplevel)
+gates="$root/.claude/hooks/gates.sh"
+
+if [ ! -x "$gates" ]; then
+  echo "COMMIT BLOCKED — $gates is missing or not executable." >&2
+  exit 1
+fi
+
+if ! out=$(cd "$root" && "$gates" 2>&1); then
+  {
+    echo "COMMIT BLOCKED — gates failed (standing rule 7). Fix, then retry."
+    echo "$out" | tail -30
+  } >&2
+  exit 1
+fi
