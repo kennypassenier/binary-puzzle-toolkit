@@ -1,0 +1,64 @@
+# Nine 6x6 puzzles in a 3x3 arrangement forming an 18x18
+# (binarypuzzle.com "9 times 6x6").
+tag = "9x6x6"
+size = 18
+
+[[regions]]
+row = 0
+col = 0
+rows = 18
+cols = 18
+
+[[regions]]
+row = 0
+col = 0
+rows = 6
+cols = 6
+
+[[regions]]
+row = 0
+col = 6
+rows = 6
+cols = 6
+
+[[regions]]
+row = 0
+col = 12
+rows = 6
+cols = 6
+
+[[regions]]
+row = 6
+col = 0
+rows = 6
+cols = 6
+
+[[regions]]
+row = 6
+col = 6
+rows = 6
+cols = 6
+
+[[regions]]
+row = 6
+col = 12
+rows = 6
+cols = 6
+
+[[regions]]
+row = 12
+col = 0
+rows = 6
+cols = 6
+
+[[regions]]
+row = 12
+col = 6
+rows = 6
+cols = 6
+
+[[regions]]
+row = 12
+col = 12
+rows = 6
+cols = 6

@@ -16,10 +16,10 @@ work here (standing rule 19).
 
 | Field | Value |
 |---|---|
-| Current phase | 6 · Development loop (L0 built) |
-| Last completed gate | Enforcement gate: git-native hooks ratified, repo public, branch protection set (2026-08-12) |
-| Next gate | L0 milestone report form (presented) |
-| AFK mode | off |
+| Current phase | 6 · Development loop (L1 in progress) |
+| Last completed gate | L0 milestone report signed off (2026-08-12) |
+| Next gate | Combined AFK milestone report (L1 onwards) |
+| AFK mode | **on** (2026-08-12) — milestone gates accumulate; deviations quarantine + queue as mini-rounds |
 
 <!-- Update this block after every completed gate. -->
 

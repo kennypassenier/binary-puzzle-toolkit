@@ -1,0 +1,34 @@
+# Four 6x6 puzzles forming a 12x12 (binarypuzzle.com "4 times 6x6").
+# Every quadrant AND the whole grid satisfy all Takuzu rules.
+tag = "4x6x6"
+size = 12
+
+[[regions]]
+row = 0
+col = 0
+rows = 12
+cols = 12
+
+[[regions]]
+row = 0
+col = 0
+rows = 6
+cols = 6
+
+[[regions]]
+row = 0
+col = 6
+rows = 6
+cols = 6
+
+[[regions]]
+row = 6
+col = 0
+rows = 6
+cols = 6
+
+[[regions]]
+row = 6
+col = 6
+rows = 6
+cols = 6

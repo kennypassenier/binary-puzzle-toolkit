@@ -1,0 +1,33 @@
+# Four 8x8 puzzles forming a 16x16 (binarypuzzle.com "4 times 8x8").
+tag = "4x8x8"
+size = 16
+
+[[regions]]
+row = 0
+col = 0
+rows = 16
+cols = 16
+
+[[regions]]
+row = 0
+col = 0
+rows = 8
+cols = 8
+
+[[regions]]
+row = 0
+col = 8
+rows = 8
+cols = 8
+
+[[regions]]
+row = 8
+col = 0
+rows = 8
+cols = 8
+
+[[regions]]
+row = 8
+col = 8
+rows = 8
+cols = 8

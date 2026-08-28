@@ -1,0 +1,22 @@
+# A 6x6 inside a 10x10 inside a 14x14, all centered
+# (binarypuzzle.com "6x6 in 10x10 in 14x14").
+tag = "6in10in14"
+size = 14
+
+[[regions]]
+row = 0
+col = 0
+rows = 14
+cols = 14
+
+[[regions]]
+row = 2
+col = 2
+rows = 10
+cols = 10
+
+[[regions]]
+row = 4
+col = 4
+rows = 6
+cols = 6

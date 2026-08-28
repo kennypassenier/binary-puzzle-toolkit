@@ -1,0 +1,41 @@
+---
+source: binforge-core/tests/inspect_snapshots.rs
+expression: "inspect::render(&geometry)"
+---
+9x6x6 — 18x18, 10 region(s)
+
+              11111111
+    012345678901234567
+  0 BBBBBBCCCCCCDDDDDD
+  1 BBBBBBCCCCCCDDDDDD
+  2 BBBBBBCCCCCCDDDDDD
+  3 BBBBBBCCCCCCDDDDDD
+  4 BBBBBBCCCCCCDDDDDD
+  5 BBBBBBCCCCCCDDDDDD
+  6 EEEEEEFFFFFFGGGGGG
+  7 EEEEEEFFFFFFGGGGGG
+  8 EEEEEEFFFFFFGGGGGG
+  9 EEEEEEFFFFFFGGGGGG
+ 10 EEEEEEFFFFFFGGGGGG
+ 11 EEEEEEFFFFFFGGGGGG
+ 12 HHHHHHIIIIIIJJJJJJ
+ 13 HHHHHHIIIIIIJJJJJJ
+ 14 HHHHHHIIIIIIJJJJJJ
+ 15 HHHHHHIIIIIIJJJJJJ
+ 16 HHHHHHIIIIIIJJJJJJ
+ 17 HHHHHHIIIIIIJJJJJJ
+
+Regions (innermost wins in the map above):
+  A at (0,0) 18x18 [balance, no-triples, unique-lines]
+  B at (0,0) 6x6 [balance, no-triples, unique-lines]
+  C at (0,6) 6x6 [balance, no-triples, unique-lines]
+  D at (0,12) 6x6 [balance, no-triples, unique-lines]
+  E at (6,0) 6x6 [balance, no-triples, unique-lines]
+  F at (6,6) 6x6 [balance, no-triples, unique-lines]
+  G at (6,12) 6x6 [balance, no-triples, unique-lines]
+  H at (12,0) 6x6 [balance, no-triples, unique-lines]
+  I at (12,6) 6x6 [balance, no-triples, unique-lines]
+  J at (12,12) 6x6 [balance, no-triples, unique-lines]
+
+Verdict: structurally valid, every cell constrained.
+Feasibility is not checked here: proving a geometry solvable needs the solver (L3).

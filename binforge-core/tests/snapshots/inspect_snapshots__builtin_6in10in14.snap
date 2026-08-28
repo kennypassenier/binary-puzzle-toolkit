@@ -1,0 +1,30 @@
+---
+source: binforge-core/tests/inspect_snapshots.rs
+expression: "inspect::render(&geometry)"
+---
+6in10in14 — 14x14, 3 region(s)
+
+              1111
+    01234567890123
+  0 AAAAAAAAAAAAAA
+  1 AAAAAAAAAAAAAA
+  2 AABBBBBBBBBBAA
+  3 AABBBBBBBBBBAA
+  4 AABBCCCCCCBBAA
+  5 AABBCCCCCCBBAA
+  6 AABBCCCCCCBBAA
+  7 AABBCCCCCCBBAA
+  8 AABBCCCCCCBBAA
+  9 AABBCCCCCCBBAA
+ 10 AABBBBBBBBBBAA
+ 11 AABBBBBBBBBBAA
+ 12 AAAAAAAAAAAAAA
+ 13 AAAAAAAAAAAAAA
+
+Regions (innermost wins in the map above):
+  A at (0,0) 14x14 [balance, no-triples, unique-lines]
+  B at (2,2) 10x10 [balance, no-triples, unique-lines]
+  C at (4,4) 6x6 [balance, no-triples, unique-lines]
+
+Verdict: structurally valid, every cell constrained.
+Feasibility is not checked here: proving a geometry solvable needs the solver (L3).

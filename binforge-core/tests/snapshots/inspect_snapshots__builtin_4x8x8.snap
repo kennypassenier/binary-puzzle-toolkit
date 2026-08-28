@@ -1,0 +1,34 @@
+---
+source: binforge-core/tests/inspect_snapshots.rs
+expression: "inspect::render(&geometry)"
+---
+4x8x8 — 16x16, 5 region(s)
+
+              111111
+    0123456789012345
+  0 BBBBBBBBCCCCCCCC
+  1 BBBBBBBBCCCCCCCC
+  2 BBBBBBBBCCCCCCCC
+  3 BBBBBBBBCCCCCCCC
+  4 BBBBBBBBCCCCCCCC
+  5 BBBBBBBBCCCCCCCC
+  6 BBBBBBBBCCCCCCCC
+  7 BBBBBBBBCCCCCCCC
+  8 DDDDDDDDEEEEEEEE
+  9 DDDDDDDDEEEEEEEE
+ 10 DDDDDDDDEEEEEEEE
+ 11 DDDDDDDDEEEEEEEE
+ 12 DDDDDDDDEEEEEEEE
+ 13 DDDDDDDDEEEEEEEE
+ 14 DDDDDDDDEEEEEEEE
+ 15 DDDDDDDDEEEEEEEE
+
+Regions (innermost wins in the map above):
+  A at (0,0) 16x16 [balance, no-triples, unique-lines]
+  B at (0,0) 8x8 [balance, no-triples, unique-lines]
+  C at (0,8) 8x8 [balance, no-triples, unique-lines]
+  D at (8,0) 8x8 [balance, no-triples, unique-lines]
+  E at (8,8) 8x8 [balance, no-triples, unique-lines]
+
+Verdict: structurally valid, every cell constrained.
+Feasibility is not checked here: proving a geometry solvable needs the solver (L3).

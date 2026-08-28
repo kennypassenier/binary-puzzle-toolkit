@@ -1,0 +1,24 @@
+---
+source: binforge-core/tests/inspect_snapshots.rs
+expression: "inspect::render(&Geometry::standard(10).unwrap())"
+---
+(standard, untagged) — 10x10, 1 region(s)
+
+              
+    0123456789
+  0 AAAAAAAAAA
+  1 AAAAAAAAAA
+  2 AAAAAAAAAA
+  3 AAAAAAAAAA
+  4 AAAAAAAAAA
+  5 AAAAAAAAAA
+  6 AAAAAAAAAA
+  7 AAAAAAAAAA
+  8 AAAAAAAAAA
+  9 AAAAAAAAAA
+
+Regions (innermost wins in the map above):
+  A at (0,0) 10x10 [balance, no-triples, unique-lines]
+
+Verdict: structurally valid, every cell constrained.
+Feasibility is not checked here: proving a geometry solvable needs the solver (L3).

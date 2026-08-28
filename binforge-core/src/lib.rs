@@ -12,6 +12,7 @@ pub mod error;
 pub mod fill;
 pub mod geometry;
 pub mod grade;
+pub mod inspect;
 pub mod rng;
 
 #[cfg(test)]
