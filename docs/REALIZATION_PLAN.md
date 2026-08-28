@@ -9,7 +9,7 @@ AFK mode off). Enforcement was installed before L0 per the procedure.
 | Milestone | Features | Status |
 |---|---|---|
 | L0 · Walking skeleton, CI green | [meta] | **done** (signed off 2026-08-12) |
-| L1 · Geometry model + inspect | K4, M6, AR3b, AR13.4 | **in progress** |
+| L1 · Geometry model + inspect | K4, M6, AR3b, AR13.4, AR13.5 | **built, gate pending (AFK)** |
 | L2 · binsolve mini-rounds B1–B3 | external (binsolve repo) | not started |
 | L3 · Random solution filler | K1, M1, AR2, AR9, AR13.1 | not started |
 | L4 · Carve loop + grading + targeting | K2, K5, K6, AR4, AR12 | not started |

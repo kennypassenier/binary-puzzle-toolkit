@@ -16,7 +16,7 @@ work here (standing rule 19).
 
 | Field | Value |
 |---|---|
-| Current phase | 6 · Development loop (L1 in progress) |
+| Current phase | 6 · Development loop (L1 built, L2 blocked on binsolve mini-rounds) |
 | Last completed gate | L0 milestone report signed off (2026-08-12) |
 | Next gate | Combined AFK milestone report (L1 onwards) |
 | AFK mode | **on** (2026-08-12) — milestone gates accumulate; deviations quarantine + queue as mini-rounds |

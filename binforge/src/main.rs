@@ -10,6 +10,8 @@ use binforge_core::geometry::{BUILTIN_TAGS, Geometry, builtin};
 use binforge_core::inspect;
 use clap::{Parser, Subcommand};
 
+mod atomic;
+
 /// AR11: 0 everything requested was produced, 1 partial, 2 usage or
 /// file or geometry error. Stated explicitly because binsolve froze the
 /// same three numbers with different meanings.
