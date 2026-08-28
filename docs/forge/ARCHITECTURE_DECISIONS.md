@@ -10,7 +10,7 @@ recommended). Phase 4 entries follow. Changes only via mini-rounds
 |---|---|---|
 | T1 | Toolchain, edition, MSRV | rustup + `rust-toolchain.toml` pin; edition 2024; no MSRV (track stable) — identical to binsolve T1/T2/T12 |
 | T2 | Workspace layout | two crates: `binforge-core` (lib, zero ambient I/O) + `binforge` (CLI: clap + anyhow) |
-| T3 | binsolve-core dependency | git dependency pinned to a commit (`https://github.com/kennypassenier/binsolve.git`, `rev = …`); local path override allowed for co-development |
+| T3 | binsolve-core dependency | git dependency pinned to a commit (`https://github.com/kennypassenier/binary-puzzle-toolkit.git`, `rev = …`); local path override allowed for co-development |
 | T4 | RNG | `rand` + `rand_chacha` (`ChaCha8Rng`): reproducible across versions/platforms, u64-seedable, per-worker stream derivation for M22 |
 | T5 | Geometry definitions (K23) | TOML via serde — comment-friendly, hand-editable |
 | T6 | Manifest format (M23) | JSON via serde_json — program-written, `jq`-greppable, feeds M29 |

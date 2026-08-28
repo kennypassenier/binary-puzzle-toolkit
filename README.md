@@ -1,11 +1,16 @@
-# binsolve
+# BinaryPuzzleToolkit
 
-A complete solver for binary puzzles (Takuzu / Binairo) in Rust: every
-standard n×n size, all five composite types from binarypuzzle.com, and
-a uniqueness proof for each solution.
+One toolkit for binary puzzles (Takuzu / Binairo) in Rust. It **solves**
+them — every standard n×n size, all five composite types from
+binarypuzzle.com, and a uniqueness proof for each solution — and it
+**generates** them, including invented geometries defined in a file.
 
-Status: **in development.** The solver, CLI and TUI are built, tested
-and hardened; documentation is complete. There is no published binary
+Merged on 2026-08-28 from two projects that were designed for each
+other: the solver (binsolve) and the generator (binforge).
+
+Status: **in development.** The solving half is built, tested,
+hardened and documented; the generating half has its model and geometry
+in place and its generation pipeline still to build. There is no published binary
 yet — build from source. Windows is build-verified (CI compiles and
 runs the suite there) but not yet runtime-verified on real hardware:
 see [docs/solve/WINDOWS_TEST_CHECKLIST.md](docs/solve/WINDOWS_TEST_CHECKLIST.md).
@@ -14,17 +19,17 @@ see [docs/solve/WINDOWS_TEST_CHECKLIST.md](docs/solve/WINDOWS_TEST_CHECKLIST.md)
 
 ```
 cargo build --release
-./target/release/binsolve "1..0....00.1.00..1......00.1...1..00"
+./target/release/bpt solve "1..0....00.1.00..1......00.1...1..00"
 ```
 
 On a terminal you get the grid plus statistics; piped or redirected you
 get one canonical line per puzzle, so it composes with other tools:
 
 ```
-binsolve --file puzzles.txt --out solutions.txt
-binsolve --explain "1..0..."          # solving steps to stderr
-binsolve --unique "1..0..."           # prove the solution is the only one
-binsolve --check --file puzzle.txt    # verify a puzzle+solution file
+bpt solve --file puzzles.txt --out solutions.txt
+bpt solve --explain "1..0..."          # solving steps to stderr
+bpt solve --unique "1..0..."           # prove the solution is the only one
+bpt solve --check --file puzzle.txt    # verify a puzzle+solution file
 ```
 
 Special types carry a tag: `4x6x6`, `4x8x8`, `9x6x6`, `8in14`,
@@ -33,7 +38,7 @@ Special types carry a tag: `4x6x6`, `4x8x8`, `9x6x6`, `8in14`,
 Watch a puzzle being solved step by step:
 
 ```
-cargo run --release -p binsolve-tui -- "1..0....00.1.00..1......00.1...1..00"
+bpt watch "1..0....00.1.00..1......00.1...1..00"
 ```
 
 ## Contributing / working on this repo
