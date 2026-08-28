@@ -133,7 +133,10 @@ pub fn parse_line(line: &str) -> Result<Puzzle, ParseError> {
         }
         None => {
             let n = (cells.len() as f64).sqrt() as usize;
-            // Integer sqrt guard: floating point may round either way.
+            // Probe n-1, n, n+1 rather than trusting the cast. Measured
+            // over every perfect square up to 4096 the naive conversion
+            // is never wrong, so this is defensive rather than load
+            // bearing — it keeps the intent explicit and costs nothing.
             let n = [n.saturating_sub(1), n, n + 1]
                 .into_iter()
                 .find(|k| k * k == cells.len())

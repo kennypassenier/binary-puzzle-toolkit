@@ -1,5 +1,11 @@
 # Pending mini-rounds (AFK queue)
 
+**Q1, Q2, Q4 and the enforcement items were resolved at the combined
+AFK gate on 2026-08-28.** The commit hook is synced with the procedure
+template (Q1/Q2), and the `parse.rs` comment (Q4) is corrected below.
+Q3 — the three mandatory Phase-2 items — is being run as its own round.
+
+
 Deviations found while Kenny was away. Per the AFK rule these are NOT
 built silently: the affected area is quarantined, the deviation is
 queued here, and work continues on everything unaffected. These are the

@@ -10,7 +10,7 @@ use binsolve_core::parse::{parse_corpus_file, parse_line};
 use binsolve_core::region::{validate_givens, validate_solution};
 use binsolve_core::search::{SolveMode, SolveOutcome, solve};
 use clap::Parser;
-use output::{canonical_line, marker_line, pretty_grid, pretty_stats, write_atomic};
+use output::{canonical_line, marker_line, terminal_display, write_atomic};
 use std::io::{IsTerminal, Write};
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -157,33 +157,13 @@ fn run() -> Result<u8> {
             }
             traces.push_str(&format_trace(&log.events));
         }
-        if interactive {
-            match &outcome {
-                SolveOutcome::Solved { solution, stats } => {
-                    pretty.push_str(&pretty_grid(solution));
-                    let unique = match mode {
-                        SolveMode::ProveUniqueness => Some(true),
-                        _ => None,
-                    };
-                    pretty.push_str(&pretty_stats(stats, elapsed, unique));
-                    pretty.push('\n');
-                }
-                SolveOutcome::MultipleSolutions { first, .. } => {
-                    pretty.push_str(&pretty_grid(first));
-                    pretty.push_str("multiple solutions exist — this puzzle is not unique\n");
-                }
-                SolveOutcome::Contradiction { reason } => {
-                    pretty.push_str(&format!("no solution: {reason}\n"));
-                }
-                SolveOutcome::Stuck { grid, filled } => {
-                    pretty.push_str(&pretty_grid(grid));
-                    let total = grid.size() * grid.size();
-                    pretty.push_str(&format!(
-                        "strategies alone reached {filled}/{total} cells ({}%)\n",
-                        filled * 100 / total
-                    ));
-                }
-            }
+        if let Some(display) = terminal_display(
+            &outcome,
+            elapsed,
+            mode == SolveMode::ProveUniqueness,
+            interactive,
+        ) {
+            pretty.push_str(&display);
         }
     }
 

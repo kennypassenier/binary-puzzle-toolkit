@@ -9,4 +9,3 @@ license.workspace = true
 binsolve-core = { path = "../binsolve-core" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
-thiserror = "2"

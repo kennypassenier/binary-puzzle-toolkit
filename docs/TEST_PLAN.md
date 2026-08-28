@@ -53,7 +53,7 @@ their fix:
 
 ## Not covered, by decision
 
-*Proposed by the audit; these become final at the Phase 7 gate.*
+*Decided by Kenny at the Phase 7 gate, 2026-08-28.*
 
 - **Windows runtime behaviour.** Build-verified only: CI compiles and
   runs the suite on `windows-latest`, but nobody has driven the binaries
@@ -72,23 +72,30 @@ their fix:
 - **The TUI event loop.** Key handling, raw-mode entry and exit, and
   terminal restoration after a panic have no tests; the render model
   they drive is covered instead.
+- **The difficulty grading's guess band.** All 20 corpus puzzles need
+  zero guesses, so the rule "any guessing means very hard" is calibrated
+  against no data, and the Easy band rests on seven files whose names
+  carry no site puzzle ID. Deferred deliberately: the grade is a sorting
+  aid, not a correctness claim. Revisit when the corpus gains puzzles
+  that force guessing.
 
-## Open questions for the gate
+## Closed at the Phase 7 gate
 
-- AR11 promises "at most an orphan `.tmp` cleaned by the next run" — no
-  cleanup code exists. Implement it, or amend the decision.
-- M2's calibration rests on 20 puzzles that all need zero guesses, so the
-  rule "any guessing means very hard" is calibrated against nothing. The
-  Easy band comes entirely from seven files whose names carry no site
-  puzzle ID; their provenance needs confirming before the calibration can
-  be called independent.
-- K11's terminal output has no test at all: it is reachable only when
-  stdout is a TTY, and every test pipes. Nothing would catch it leaking
-  into a pipe and breaking the scraper contract.
+- **AR11's orphan `.tmp` cleanup** is now implemented and pinned by
+  `ar11_a_successful_write_sweeps_an_orphaned_temp`: a successful write
+  sweeps a leftover temp file for its own destination.
+- **The terminal display (K11)** is now a pure function taking the
+  terminal decision as a parameter, so all four outcome shapes are
+  tested — including the guarantee that a pipe receives nothing but
+  canonical lines.
+- **Two unused Phase-3 choices** were dropped: `thiserror` was a
+  declared dependency of the CLI with zero references, and `insta` was
+  never a dependency at all. The pinned trace fixture covers what
+  snapshot testing was chosen for.
+
+## Still open
+
 - M3's "verify a filled grid" is not implemented — `--check` requires a
   puzzle+solution file. Implement, or amend the feature text.
 - K1 promised at least two real puzzles per standard size; 14×14 has one,
   and it is the easy one.
-- Two Phase-3 choices were never used: `thiserror` is a declared
-  dependency of the CLI with zero references, and `insta` (snapshot
-  testing) is not a dependency of any crate. Drop them, or use them.
