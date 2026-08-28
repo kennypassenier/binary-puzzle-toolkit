@@ -117,7 +117,10 @@ fn ar10_a_permanent_rename_failure_is_reported_without_five_retries() {
         !text.contains("after 5 attempts"),
         "must not claim a retry storm: {text}"
     );
-    // Five backoffs would take at least 200 ms; failing fast is the point.
+    // Five backoffs take at least 200 ms; failing fast is the point. This
+    // is the assertion that caught the real bug: on Windows, renaming onto
+    // a directory reports PermissionDenied, which an ErrorKind-based
+    // retry rule mistook for a transient file lock.
     assert!(elapsed.as_millis() < 150, "took {elapsed:?}, expected fast");
 
     std::fs::remove_dir_all(&dir).ok();

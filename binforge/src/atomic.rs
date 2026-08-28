@@ -108,11 +108,23 @@ fn temp_path(path: &Path) -> PathBuf {
     path.with_file_name(name)
 }
 
-/// Windows reports a held file as a permission error; everything else —
-/// a missing directory, a destination that is a directory — is permanent
-/// and retrying it only delays a failure while blaming the wrong cause.
+/// Only ERROR_SHARING_VIOLATION is worth retrying: it means another
+/// process holds the file open right now. Windows CI proved that
+/// `ErrorKind::PermissionDenied` is too coarse — renaming onto an
+/// existing directory reports the same kind, so a permanent failure was
+/// retried five times and then blamed on a lock that never existed.
+/// Unix has no transient rename failure of this sort at all.
 fn is_transient(error: &std::io::Error) -> bool {
-    matches!(error.kind(), std::io::ErrorKind::PermissionDenied)
+    #[cfg(windows)]
+    {
+        const ERROR_SHARING_VIOLATION: i32 = 32;
+        error.raw_os_error() == Some(ERROR_SHARING_VIOLATION)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = error;
+        false
+    }
 }
 
 fn rename_with_retry(from: &Path, to: &Path) -> Result<()> {
