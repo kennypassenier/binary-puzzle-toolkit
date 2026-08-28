@@ -68,7 +68,7 @@ fn single_pass(
     let mut changed = false;
     for region in regions {
         for is_row in [true, false] {
-            for index in 0..region.n {
+            for index in 0..region.line_count(is_row) {
                 for strategy in strategies {
                     let deductions = {
                         let view = LineView::new(grid, *region, is_row, index);
@@ -388,7 +388,7 @@ fn pick_guess_cell(grid: &Grid, regions: &[Region]) -> Option<(usize, usize)> {
     let mut best: Option<(usize, (usize, usize))> = None;
     for region in regions {
         for is_row in [true, false] {
-            for index in 0..region.n {
+            for index in 0..region.line_count(is_row) {
                 let view = LineView::new(grid, *region, is_row, index);
                 let empties: Vec<usize> = (0..view.len())
                     .filter(|i| view.cells()[*i].is_empty())

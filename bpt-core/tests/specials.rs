@@ -170,10 +170,10 @@ fn k2c_nine_block_layout_tiles_the_grid_exactly() {
     let regions = PuzzleKind::NineTimes6x6.regions();
     assert_eq!(regions.len(), 10, "nine blocks plus the whole grid");
     let whole = regions.last().unwrap();
-    assert_eq!(whole.n, 18);
+    assert_eq!((whole.rows, whole.cols), (18, 18));
     let origins: Vec<_> = regions
         .iter()
-        .filter(|r| r.n == 6)
+        .filter(|r| r.rows == 6)
         .map(|r| (r.row, r.col))
         .collect();
     assert_eq!(

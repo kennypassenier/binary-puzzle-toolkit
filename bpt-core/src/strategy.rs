@@ -106,7 +106,7 @@ impl<'a> LineView<'a> {
     /// context), in fixed region order (AR13), with their absolute
     /// line index.
     pub fn completed_parallel(&self) -> Vec<(usize, Vec<Cell>)> {
-        (0..self.region.n)
+        (0..self.region.line_count(self.is_row))
             .filter(|i| *i != self.index)
             .filter_map(|i| {
                 let cells = self.region.line_cells(self.grid, self.is_row, i);
@@ -539,7 +539,7 @@ pub fn registry_stages() -> Vec<Vec<Box<dyn Strategy>>> {
 mod tests {
     use super::*;
     use crate::parse::parse_grid_chars;
-    use crate::region::{PuzzleKind, RuleSet};
+    use crate::region::PuzzleKind;
 
     /// Apply one strategy to a single line laid out as row 0 of a grid,
     /// returning the line after applying the deductions.
@@ -550,12 +550,7 @@ mod tests {
             cells[i] = c;
         }
         let mut grid = Grid::from_cells(n, cells);
-        let region = Region {
-            row: 0,
-            col: 0,
-            n,
-            rules: RuleSet::ALL,
-        };
+        let region = Region::square(0, 0, n);
         let view = LineView::new(&grid, region, true, 0);
         let deductions = strategy.apply(&view);
         for d in deductions {
@@ -598,12 +593,7 @@ mod tests {
             cells[4 + i] = c;
         }
         let mut grid = Grid::from_cells(4, cells);
-        let region = Region {
-            row: 0,
-            col: 0,
-            n: 4,
-            rules: RuleSet::ALL,
-        };
+        let region = Region::square(0, 0, 4);
         let view = LineView::new(&grid, region, true, 1);
         let deductions = KeepLineUnique.apply(&view);
         assert_eq!(deductions.len(), 2);
@@ -651,12 +641,7 @@ mod tests {
             cells[6 + i] = c;
         }
         let mut grid = Grid::from_cells(6, cells);
-        let region = Region {
-            row: 0,
-            col: 0,
-            n: 6,
-            rules: RuleSet::ALL,
-        };
+        let region = Region::square(0, 0, 6);
         let view = LineView::new(&grid, region, true, 1);
         let deductions = FillPossibilities.apply(&view);
         for d in &deductions {

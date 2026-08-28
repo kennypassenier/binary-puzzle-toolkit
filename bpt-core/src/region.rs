@@ -27,23 +27,51 @@ impl RuleSet {
 pub struct Region {
     pub row: usize,
     pub col: usize,
-    pub n: usize,
+    pub rows: usize,
+    pub cols: usize,
     pub rules: RuleSet,
 }
 
 impl Region {
+    /// A square region enforcing every rule — what all six known puzzle
+    /// kinds are made of. Regions are rectangular in general so that a
+    /// generated geometry can define non-square areas; every rule below
+    /// reads `rows`/`cols` rather than assuming they are equal.
     fn all(row: usize, col: usize, n: usize) -> Self {
+        Region::square(row, col, n)
+    }
+
+    pub fn square(row: usize, col: usize, n: usize) -> Self {
         Region {
             row,
             col,
-            n,
+            rows: n,
+            cols: n,
             rules: RuleSet::ALL,
         }
     }
 
+    /// Number of cells in one line of this region: a row spans `cols`
+    /// cells, a column spans `rows`.
+    pub fn line_len(&self, is_row: bool) -> usize {
+        if is_row { self.cols } else { self.rows }
+    }
+
+    /// How many lines this region has in the given direction.
+    pub fn line_count(&self, is_row: bool) -> usize {
+        if is_row { self.rows } else { self.cols }
+    }
+
+    pub fn contains(&self, row: usize, col: usize) -> bool {
+        row >= self.row
+            && row < self.row + self.rows
+            && col >= self.col
+            && col < self.col + self.cols
+    }
+
     /// Cells of one line of this region, in grid coordinates.
     pub fn line_cells(&self, grid: &Grid, is_row: bool, index: usize) -> Vec<Cell> {
-        (0..self.n)
+        (0..self.line_len(is_row))
             .map(|i| {
                 if is_row {
                     grid.get(self.row + index, self.col + i)
@@ -202,8 +230,9 @@ impl fmt::Display for Violation {
                 format!("{kind} {abs}")
             } else {
                 format!(
-                    "{kind} {abs} (within the {n}x{n} region at r{r},c{c})",
-                    n = region.n,
+                    "{kind} {abs} (within the {rows}x{cols} region at r{r},c{c})",
+                    rows = region.rows,
+                    cols = region.cols,
                     r = region.row,
                     c = region.col
                 )
@@ -224,7 +253,7 @@ impl fmt::Display for Violation {
                 f,
                 "{} has {zeros} zeros and {ones} ones; each line needs exactly {} of each",
                 line_name(*is_row, region, *index),
-                region.n / 2
+                region.line_len(*is_row) / 2
             ),
             Violation::Triple {
                 region,
@@ -247,10 +276,11 @@ impl fmt::Display for Violation {
                 let kind = if *is_row { "rows" } else { "columns" };
                 write!(
                     f,
-                    "{kind} {} and {} of the {n}x{n} region at r{r},c{c} are identical; every line must be unique",
+                    "{kind} {} and {} of the {rows}x{cols} region at r{r},c{c} are identical; every line must be unique",
                     first,
                     second,
-                    n = region.n,
+                    rows = region.rows,
+                    cols = region.cols,
                     r = region.row,
                     c = region.col
                 )
@@ -294,7 +324,7 @@ pub fn validate_solution(grid: &Grid, regions: &[Region]) -> Vec<Violation> {
     }
     for region in regions {
         for is_row in [true, false] {
-            let lines: Vec<Vec<Cell>> = (0..region.n)
+            let lines: Vec<Vec<Cell>> = (0..region.line_count(is_row))
                 .map(|i| region.line_cells(grid, is_row, i))
                 .collect();
             for (index, line) in lines.iter().enumerate() {
@@ -351,21 +381,21 @@ pub fn validate_partial(grid: &Grid, regions: &[Region]) -> Vec<Violation> {
     let mut violations = Vec::new();
     for region in regions {
         for is_row in [true, false] {
-            let lines: Vec<Vec<Cell>> = (0..region.n)
+            let lines: Vec<Vec<Cell>> = (0..region.line_count(is_row))
                 .map(|i| region.line_cells(grid, is_row, i))
                 .collect();
             for (index, line) in lines.iter().enumerate() {
                 if region.rules.balance {
                     for value in [Cell::Zero, Cell::One] {
                         let count = line.iter().filter(|c| **c == value).count();
-                        if count > region.n / 2 {
+                        if count > region.line_len(is_row) / 2 {
                             violations.push(Violation::TooMany {
                                 region: *region,
                                 is_row,
                                 index,
                                 value,
                                 count,
-                                max: region.n / 2,
+                                max: region.line_len(is_row) / 2,
                             });
                         }
                     }
@@ -448,7 +478,7 @@ mod tests {
         assert_eq!(PuzzleKind::SixIn10In14.regions().len(), 3);
         // The nested 6x6 sits centered: offset (14-6)/2 = 4.
         let inner = PuzzleKind::SixIn10In14.regions()[0];
-        assert_eq!((inner.row, inner.col, inner.n), (4, 4, 6));
+        assert_eq!((inner.row, inner.col, inner.rows, inner.cols), (4, 4, 6, 6));
     }
 
     #[test]
