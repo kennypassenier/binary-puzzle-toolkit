@@ -15,9 +15,9 @@ work here (standing rule 19).
 
 | Field | Value |
 |---|---|
-| Current phase | 7 · Hardening (L0-L8 gated; L9 built, gate accumulating) |
+| Current phase | 8 · Documentation written; gates for 7, 8 and L9 accumulating (AFK) |
 | Last completed gate | L8 report + enforcement ratification (2026-08-28) |
-| Next gate | combined AFK report: L9 + phase 7 gaps + queued mini-rounds |
+| Next gate | combined AFK report: L9 + phase 7 gaps + phase 8 docs + queued mini-rounds |
 | AFK mode | ON since 2026-08-28 — gates accumulate, deviations quarantine as mini-rounds |
 
 <!-- Update this block after every completed gate. -->
