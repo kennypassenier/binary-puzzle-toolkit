@@ -95,7 +95,15 @@ failures to a reproducing `(seed, index, attempt)`.
   requires feature IDs in brackets in the commit message.
 - `.claude/hooks/core-purity.sh` — AR1: no `std::fs`, `std::thread`,
   `std::time`, or print macros in `binforge-core`.
+- `.githooks/pre-commit` + `.githooks/commit-msg`, wired via
+  `core.hooksPath` — **git-native**, so the gates hold from any session,
+  tool or terminal; the Claude Code PreToolUse hook is a second layer,
+  not the only one (procedure amendment 2026-08-12). Verified by a
+  deliberately ID-less commit being refused.
 - `.github/workflows/ci.yml` — the same gates on Linux and Windows,
   plus the purity job. Red blocks merge.
+- **Outstanding:** branch protection on `main` requiring the CI check.
+  binforge has no git remote yet, so this cannot be set; it is a
+  precondition for the first push, not for L0.
 - Deliberately **not** blocking commits: criterion benchmarks and the
   full D1 validation (minutes each) — they run in CI.
