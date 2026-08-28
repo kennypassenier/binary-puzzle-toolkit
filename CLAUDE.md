@@ -15,10 +15,10 @@ work here (standing rule 19).
 
 | Field | Value |
 |---|---|
-| Current phase | 6 · Development loop (L8 runs in progress, L9 built; gates pending) |
-| Last completed gate | L7 milestone report (2026-08-12) |
-| Next gate | L8 milestone report (after fuzz runs), then L9 |
-| AFK mode | off |
+| Current phase | 7 · Hardening (L0-L8 gated; L9 built, gate accumulating) |
+| Last completed gate | L8 report + enforcement ratification (2026-08-28) |
+| Next gate | combined AFK report: L9 + phase 7 gaps + queued mini-rounds |
+| AFK mode | ON since 2026-08-28 — gates accumulate, deviations quarantine as mini-rounds |
 
 <!-- Update this block after every completed gate. -->
 

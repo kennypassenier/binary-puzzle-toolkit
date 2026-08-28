@@ -115,3 +115,16 @@ Core is bit-deterministic: fixed region/line/strategy iteration order;
 no Hash* or randomized structures in solver paths; no time-dependent
 behaviour. Required by K16 snapshots, trace-replay property test, M5
 parallel-equals-sequential.
+
+## Enforcement decisions (ratified 2026-08-28)
+
+Built on a direct "go ahead" and ratified afterwards in a mini-round,
+per the procedure rule that enforcement changes are always a gate.
+
+| ID | Decision |
+|---|---|
+| H1 | The pre-commit hook runs the FULL test suite (fmt + clippy + `cargo test --workspace`), measured at 8.5 s |
+| H2 | `git commit --no-verify` stays available; the server-side net is branch protection requiring green CI |
+| H3 | `Merge ` and `Revert ` messages are exempt from the feature-ID rule (git generates them) |
+| H4 | Branch protection on `main`: all four CI checks required, strict up-to-date, no force-push, no deletion, no required reviews, admins NOT included |
+| H5 | Dependabot version/security updates off (recorded in `.github/dependabot.yml`); vulnerability alerts stay on |
