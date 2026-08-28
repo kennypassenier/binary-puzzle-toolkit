@@ -129,6 +129,8 @@ version = "1.0.0"
 dependencies = [
  "bpt-core",
  "insta",
+ "rand",
+ "rand_chacha",
  "serde",
  "toml",
 ]
