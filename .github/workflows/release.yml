@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            suffix: ""
+            archive: tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            suffix: ".exe"
+            archive: zip
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      # The gates that guard every commit also guard a release: a tag
+      # must never produce a binary the test suite would have rejected.
+      - name: Gates
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --workspace --all-targets -- -D warnings
+          cargo test --workspace
+      - name: Performance thresholds
+        run: cargo test --release -p binsolve-core --test thresholds -- --nocapture
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package (unix)
+        if: matrix.archive == 'tar.gz'
+        run: |
+          name="binsolve-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          mkdir "$name"
+          cp target/${{ matrix.target }}/release/binsolve "$name/"
+          cp target/${{ matrix.target }}/release/binsolve-tui "$name/"
+          cp README.md CHANGELOG.md LICENSE "$name/"
+          tar czf "$name.tar.gz" "$name"
+          sha256sum "$name.tar.gz" > "$name.tar.gz.sha256"
+
+      - name: Package (windows)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          $name = "binsolve-$env:GITHUB_REF_NAME-${{ matrix.target }}"
+          New-Item -ItemType Directory -Path $name | Out-Null
+          Copy-Item target/${{ matrix.target }}/release/binsolve.exe $name/
+          Copy-Item target/${{ matrix.target }}/release/binsolve-tui.exe $name/
+          Copy-Item README.md,CHANGELOG.md,LICENSE $name/
+          Compress-Archive -Path $name -DestinationPath "$name.zip"
+          (Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower() + "  $name.zip" |
+            Out-File -Encoding ascii "$name.zip.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: |
+            binsolve-*.tar.gz
+            binsolve-*.tar.gz.sha256
+            binsolve-*.zip
+            binsolve-*.zip.sha256
+
+  publish:
+    name: publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      # One manifest listing every asset's checksum, so a download can be
+      # verified without trusting the release page's rendering.
+      - name: Build checksum manifest
+        run: |
+          cd dist
+          cat *.sha256 > SHA256SUMS
+          echo "--- manifest ---"
+          cat SHA256SUMS
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/binsolve-*.tar.gz
+            dist/binsolve-*.zip
+            dist/SHA256SUMS
+          body_path: CHANGELOG.md
+          draft: true
+          fail_on_unmatched_files: true
