@@ -147,3 +147,20 @@ B1). The error model already distinguishes the two answers
 `ar13_5_infeasible_and_budget_exhausted_are_different_answers`), and the
 inspect command says so explicitly: *"Feasibility is not checked here."*
 The check itself lands in L3 with the filler.
+
+## Retro candidate (Phase 10)
+
+**Classify the condition, not the error code.** The atomic write layer
+tried to decide whether a failed rename was worth retrying by inspecting
+the error. On Linux that logic looked right and the tests passed; on
+Windows the same permanent situation (the destination is a directory)
+reports a code that also means "the file is briefly locked", so a doomed
+rename was retried five times and then blamed on a lock that never
+existed. Windows CI caught it twice — once through `ErrorKind`, once
+through the raw OS code — before the fix became "check the condition
+itself up front, on every platform".
+
+Two things this confirms for the procedure: the frozen decision to run
+Windows in CI from L0 (C3) paid for itself on the very first milestone
+that touched the filesystem, and a test that asserts *timing* caught a
+correctness bug that assertions on the error message did not.
