@@ -128,6 +128,15 @@ renderer and the coverage scan need a different defence against a
 nonsense file; if you want a lower one, it should come from measurement
 in L7 rather than from me picking a number.
 
+### D-L1e · Windows durability is weaker than Linux (for Phase 7)
+
+`atomic::sync_dir` flushes the destination directory so a rename really
+is on disk. Only Unix can open a directory to flush it, so on Windows —
+a supported platform under C3 — the ordering rests on the filesystem
+alone. Recorded here so it lands in `docs/TEST_PLAN.md` as a known
+limitation at Phase 7 rather than being quietly assumed away. Nothing
+to decide today; it becomes a Close / Accept / Later item there.
+
 ### D-L1c · Geometry feasibility is not yet detectable
 
 K4 promises infeasible geometries are "rejected rather than looped on".
