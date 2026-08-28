@@ -41,25 +41,43 @@ fn load_all() -> Vec<(String, Puzzle)> {
         .collect()
 }
 
-/// Regression (M7 fuzzer, 2026-08-12): sparse grids took seconds
-/// because DFS explored branches that had already broken a rule no
-/// strategy inspects (an over-filled line). These two inputs took
-/// 2.08 s and 0.56 s before partial validation was added to the search.
+/// Regression (M7 fuzzer): sparse grids once took seconds because DFS
+/// explored branches that had already broken a rule no strategy
+/// inspects (an over-filled line). The first two inputs took 2.08 s and
+/// 0.56 s before partial validation was added to the search; the third
+/// is the slowest input found by a full hour of solver fuzzing on the
+/// fixed code, and is budgeted against the G5 bound because it sits
+/// closest to it.
+///
+/// None of these are real puzzles — published puzzles carry enough
+/// givens to be uniquely solvable. They are adversarial inputs the
+/// scraper pipeline could still hand us.
 #[test]
 fn k13_adversarial_sparse_inputs_stay_fast() {
-    let cases = [
+    let cases: [(&str, Duration); 3] = [
         // 10x10, 14 givens — solvable.
-        "...01...........01........1...0...0..1..................1...........0....1.........1..........0.1...",
+        (
+            "...01...........01........1...0...0..1..................1...........0....1.........1..........0.1...",
+            Duration::from_millis(100),
+        ),
         // 8x8, 8 givens — contradictory, must be proven so.
-        ".1.......................0......0....1...........1.......1.1....",
+        (
+            ".1.......................0......0....1...........1.......1.1....",
+            Duration::from_millis(100),
+        ),
+        // 10x10, 9 givens — slowest unit from a 7.5M-execution fuzz run.
+        (
+            ".1......................1.......1....................................1.......1.............00....11.",
+            Duration::from_secs(1),
+        ),
     ];
-    for case in cases {
+    for (case, budget) in cases {
         let puzzle = binsolve_core::parse::parse_line(case).expect("valid input");
         let started = Instant::now();
         let _ = solve(&puzzle, SolveMode::FirstSolution, &mut NullObserver);
         let elapsed = started.elapsed();
         println!(
-            "adversarial {}x{} solved in {elapsed:.1?}",
+            "adversarial {}x{} solved in {elapsed:.1?} (budget {budget:.1?})",
             puzzle.givens.size(),
             puzzle.givens.size()
         );
@@ -67,8 +85,8 @@ fn k13_adversarial_sparse_inputs_stay_fast() {
             continue;
         }
         assert!(
-            elapsed < Duration::from_millis(500),
-            "sparse input took {elapsed:.1?}, expected well under 500 ms"
+            elapsed < budget,
+            "sparse input took {elapsed:.1?}, over its {budget:.1?} budget"
         );
     }
 }
