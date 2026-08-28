@@ -1,0 +1,11 @@
+[package]
+name = "binforge"
+description = "Command-line generator for binary puzzles (Takuzu/Binairo)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+binforge-core = { path = "../binforge-core" }
+
+[dev-dependencies]

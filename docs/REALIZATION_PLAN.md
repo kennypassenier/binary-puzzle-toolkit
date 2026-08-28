@@ -8,13 +8,13 @@ AFK mode off). Enforcement was installed before L0 per the procedure.
 
 | Milestone | Features | Status |
 |---|---|---|
-| L0 · Walking skeleton, CI green | [meta] | not started |
+| L0 · Walking skeleton, CI green | [meta] | **built, gate pending** |
 | L1 · Geometry model + inspect | K4, M6, AR3b, AR13.4 | not started |
 | L2 · binsolve mini-rounds B1–B3 | external (binsolve repo) | not started |
 | L3 · Random solution filler | K1, M1, AR2, AR9, AR13.1 | not started |
 | L4 · Carve loop + grading + targeting | K2, K5, K6, AR4, AR12 | not started |
 | L5 · Output, batches, CLI | K7, K8, K10, M2, M4, M7, AR8, AR10, AR11 | not started |
-| L6 · Independent validation harness | K12, D1, AR8, B5 | not started |
+| L6 · Independent validation harness + restore drill | K12, D1, M11, AR8, B5 | not started |
 | L7 · Parallelism, benchmarks, baselines | M3, K11, AR6, B4 | not started |
 | L8 · Invented types + property testing | K9, D4, M9, M5 | not started |
 
@@ -74,7 +74,9 @@ index order; exit-code table covered.
 ### L6
 D1's batches (100 per standard size 6–20, per special type) all confirm
 exactly one solution through the real binsolve binary; the sabotage
-puzzle is caught; a mismatched binary is detected, never silently used.
+puzzle is caught; a mismatched binary is detected, never silently used. M11's
+restore drill passes: a fresh clone plus a stored seed reproduces a
+previous batch byte for byte.
 
 ### L7
 Parallel output identical to sequential for the same seed; baseline
@@ -102,8 +104,21 @@ failures to a reproducing `(seed, index, attempt)`.
   deliberately ID-less commit being refused.
 - `.github/workflows/ci.yml` — the same gates on Linux and Windows,
   plus the purity job. Red blocks merge.
-- **Outstanding:** branch protection on `main` requiring the CI check.
-  binforge has no git remote yet, so this cannot be set; it is a
-  precondition for the first push, not for L0.
+- Branch protection on `main` requiring the CI checks — set 2026-08-12.
+  It was refused while the repository was private ("Upgrade to GitHub
+  Pro or make this repository public"); the enforcement gate chose
+  public, matching binsolve, which restored it.
 - Deliberately **not** blocking commits: criterion benchmarks and the
   full D1 validation (minutes each) — they run in CI.
+
+## Amendments
+
+**2026-08-12 (Phase 2 mandatory-items mini-round).** The update
+mechanism is manual (`git pull` + `cargo build --release`) and becomes a
+numbered procedure in the operations runbook in Phase 8, including
+re-pinning the binsolve revision and re-running the validation batch.
+Self-update was chosen first and then dropped once its collisions with
+C2 (fully offline) and the private repository were worked out, so no
+updater and no release workflow enter the plan: the milestone list stays
+L0–L8 as approved. M11 (restore drill) joins L6, where the validation
+machinery already exists.

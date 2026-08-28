@@ -16,9 +16,9 @@ work here (standing rule 19).
 
 | Field | Value |
 |---|---|
-| Current phase | 6 · Development loop (L0 next) |
-| Last completed gate | Phase 5 plan approved, enforcement installed (2026-08-12) |
-| Next gate | L0 milestone report form |
+| Current phase | 6 · Development loop (L0 built) |
+| Last completed gate | Enforcement gate: git-native hooks ratified, repo public, branch protection set (2026-08-12) |
+| Next gate | L0 milestone report form (presented) |
 | AFK mode | off |
 
 <!-- Update this block after every completed gate. -->
@@ -35,7 +35,13 @@ work here (standing rule 19).
 
 ## Gates (enforced)
 
-Commits are blocked by `.claude/hooks/check-commit.sh` unless
-`.claude/hooks/gates.sh` passes and the message carries IDs in
-brackets (`[W12]`, `[L4b]`, `[meta]`). CI re-runs the same gates on
-every push; red blocks merge.
+Two layers, both running `.claude/hooks/gates.sh` (fmt, clippy with
+warnings as errors, full test suite, core-purity check):
+
+- **git-native** — `.githooks/pre-commit` + `.githooks/commit-msg` via
+  `core.hooksPath`, so the gates hold from any terminal or tool.
+- **session** — `.claude/hooks/check-commit.sh` as a second layer.
+
+A commit is refused unless the gates pass and the message carries IDs
+in brackets (`[K2]`, `[L4]`, `[meta]`). CI re-runs the same gates on
+Linux and Windows; branch protection on `main` requires them.
