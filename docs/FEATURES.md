@@ -166,6 +166,32 @@ Batch puzzles across cores, output order preserved. *Upgraded from my
 "Later" recommendation to Desired at the round-2 gate.*
 **Tests:** parallel output identical to sequential on the corpus.
 
+## Phase 2 mandatory items (decided 2026-08-28)
+
+These three became mandatory in the procedure after this feature list
+was frozen, so they were run as a separate round.
+
+### Update & distribution mechanism — rebuild from git
+binsolve is updated by pulling the repository and running
+`cargo build --release`. No self-update code, by decision: the tool is
+developed on the same machines it runs on, so a self-updater would be
+machinery without a recipient. The release workflow still publishes
+built archives with checksums for a machine without a Rust toolchain.
+
+### Backup & restore — the repository is the backup
+State inventory: the source and the 20-puzzle test corpus live in git
+and are pushed to GitHub; nothing else persists between runs (no
+database, no settings, no secrets, no cache). Restore is `git clone`
+plus `git config core.hooksPath .githooks`.
+- **Automatic?** Yes — every commit is pushed; no separate mechanism.
+- **Restore exercised?** Yes, 2026-08-28: the release binaries were
+  installed into an empty directory and driven from there.
+- The fuzz corpus (910 inputs) is deliberately NOT in git. Losing it
+  costs a fuzzer some coverage-rediscovery time, not information.
+
+### Ecosystem integration — open
+Deferred to its own round: see `docs/PENDING_MINI_ROUNDS.md`.
+
 ## Later
 
 ### M6 · JSON output mode
