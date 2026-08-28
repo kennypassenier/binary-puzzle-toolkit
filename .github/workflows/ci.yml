@@ -40,6 +40,22 @@ jobs:
       - name: Tests
         run: cargo test --workspace
 
+  perf:
+    name: performance thresholds (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      # K13/G5 assert only in release: a debug build is an order of
+      # magnitude slower and would fail meaninglessly. Without this job
+      # nothing automated ever checks the speed promises.
+      - name: Threshold test (release)
+        run: cargo test --release -p binsolve-core --test thresholds -- --nocapture
+
   core-zero-deps:
     name: core has no runtime dependencies
     runs-on: ubuntu-latest

@@ -10,12 +10,3 @@ pub mod parse;
 pub mod region;
 pub mod search;
 pub mod strategy;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn skeleton_compiles_and_tests_run() {
-        // L0 walking-skeleton smoke test; replaced by real suites in L1+.
-        assert_eq!(2 + 2, 4);
-    }
-}
