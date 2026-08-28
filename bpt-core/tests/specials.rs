@@ -191,3 +191,46 @@ fn k2c_nine_block_layout_tiles_the_grid_exactly() {
         ]
     );
 }
+
+/// B2: the solver accepts a geometry it has never heard of. The rules
+/// were never per-type — only per-region — so an invented layout solves
+/// and proves unique exactly like a built-in one. This is what lets the
+/// generator validate its own inventions.
+#[test]
+fn b2_an_invented_geometry_solves_like_a_known_one() {
+    use bpt_core::event::NullObserver;
+    use bpt_core::grid::Grid;
+    use bpt_core::region::{Puzzle, Region, validate_solution};
+    use bpt_core::search::{SolveMode, SolveOutcome, solve};
+
+    // A layout binsolve has no tag for: an 8x8 with two 4x4 blocks on the
+    // diagonal, on top of the whole grid.
+    let regions = vec![
+        Region::square(0, 0, 4),
+        Region::square(4, 4, 4),
+        Region::square(0, 0, 8),
+    ];
+    let puzzle = Puzzle::custom(Grid::empty(8), regions.clone());
+
+    let outcome = solve(&puzzle, SolveMode::FirstSolution, &mut NullObserver);
+    let SolveOutcome::Solved { solution, .. } = outcome else {
+        panic!("an empty invented geometry must be solvable: {outcome:?}");
+    };
+    assert!(
+        validate_solution(&solution, &regions).is_empty(),
+        "the solution must satisfy every region of the invented geometry"
+    );
+
+    // And the extra regions genuinely constrain: each 4x4 block is
+    // balanced on its own, which a plain 8x8 would not require.
+    for block in [Region::square(0, 0, 4), Region::square(4, 4, 4)] {
+        for r in 0..4 {
+            let row = block.line_cells(&solution, true, r);
+            let zeros = row
+                .iter()
+                .filter(|c| **c == bpt_core::grid::Cell::Zero)
+                .count();
+            assert_eq!(zeros, 2, "each block row holds two zeros");
+        }
+    }
+}

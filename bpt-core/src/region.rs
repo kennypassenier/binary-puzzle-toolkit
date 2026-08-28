@@ -86,12 +86,22 @@ impl Region {
 /// The five special types (K2a–K2e) plus standard n×n.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PuzzleKind {
-    Standard { n: usize },
+    Standard {
+        n: usize,
+    },
     FourTimes6x6,
     FourTimes8x8,
     NineTimes6x6,
     EightIn14,
     SixIn10In14,
+    /// A geometry the generator invented: any grid size with any set of
+    /// regions. The solver treats it exactly like a known kind — the
+    /// rules were never per-type, only per-region — so a generated type
+    /// can be solved and proven unique without teaching the solver about
+    /// it first.
+    Custom {
+        n: usize,
+    },
 }
 
 impl PuzzleKind {
@@ -108,7 +118,9 @@ impl PuzzleKind {
 
     pub fn tag(&self) -> Option<&'static str> {
         match self {
-            PuzzleKind::Standard { .. } => None,
+            // A custom geometry has no reserved tag: it travels with its
+            // region list rather than by name.
+            PuzzleKind::Standard { .. } | PuzzleKind::Custom { .. } => None,
             PuzzleKind::FourTimes6x6 => Some("4x6x6"),
             PuzzleKind::FourTimes8x8 => Some("4x8x8"),
             PuzzleKind::NineTimes6x6 => Some("9x6x6"),
@@ -119,7 +131,7 @@ impl PuzzleKind {
 
     pub fn grid_size(&self) -> usize {
         match self {
-            PuzzleKind::Standard { n } => *n,
+            PuzzleKind::Standard { n } | PuzzleKind::Custom { n } => *n,
             PuzzleKind::FourTimes6x6 => 12,
             PuzzleKind::FourTimes8x8 => 16,
             PuzzleKind::NineTimes6x6 => 18,
@@ -132,6 +144,8 @@ impl PuzzleKind {
     pub fn regions(&self) -> Vec<Region> {
         match self {
             PuzzleKind::Standard { n } => vec![Region::all(0, 0, *n)],
+            // Custom kinds carry their regions on the Puzzle, not here.
+            PuzzleKind::Custom { n } => vec![Region::all(0, 0, *n)],
             PuzzleKind::FourTimes6x6 => tiled(2, 6),
             PuzzleKind::FourTimes8x8 => tiled(2, 8),
             PuzzleKind::NineTimes6x6 => tiled(3, 6),
@@ -165,11 +179,28 @@ fn tiled(blocks_per_side: usize, block_n: usize) -> Vec<Region> {
 pub struct Puzzle {
     pub kind: PuzzleKind,
     pub givens: Grid,
+    /// Set only for a custom geometry; the six known kinds derive their
+    /// regions from `kind` so that a puzzle read from text can never
+    /// disagree with its tag.
+    pub custom_regions: Option<Vec<Region>>,
 }
 
 impl Puzzle {
     pub fn regions(&self) -> Vec<Region> {
-        self.kind.regions()
+        match &self.custom_regions {
+            Some(regions) => regions.clone(),
+            None => self.kind.regions(),
+        }
+    }
+
+    /// A puzzle on an invented geometry: the generator hands over the
+    /// regions it built and validated.
+    pub fn custom(givens: Grid, regions: Vec<Region>) -> Self {
+        Puzzle {
+            kind: PuzzleKind::Custom { n: givens.size() },
+            givens,
+            custom_regions: Some(regions),
+        }
     }
 }
 

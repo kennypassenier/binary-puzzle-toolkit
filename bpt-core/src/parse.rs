@@ -154,6 +154,9 @@ pub fn parse_line(line: &str) -> Result<Puzzle, ParseError> {
     Ok(Puzzle {
         kind,
         givens: Grid::from_cells(n, cells),
+        // Text always describes one of the six known kinds; a custom
+        // geometry reaches the solver through Puzzle::custom instead.
+        custom_regions: None,
     })
 }
 

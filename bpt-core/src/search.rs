@@ -98,6 +98,38 @@ enum Applied {
     Contradiction { row: usize, col: usize },
 }
 
+/// Which cell to guess next, and which value to try first.
+///
+/// The solver is bit-deterministic by contract (AR13), which is exactly
+/// what a generator cannot use: filling an empty grid the same way every
+/// time yields one puzzle, forever. Rather than teach the solver about
+/// randomness, the choice is lifted out — the solver still explores
+/// deterministically *given an oracle*, and the generator supplies one
+/// driven by its own seeded source.
+pub trait ChoiceOracle {
+    /// Pick an empty cell to branch on, or None when the grid is full.
+    fn pick_cell(&mut self, grid: &Grid, regions: &[Region]) -> Option<(usize, usize)>;
+
+    /// The order in which the two values are tried for that cell.
+    fn value_order(&mut self, row: usize, col: usize) -> [Cell; 2];
+}
+
+/// The solver's own choice: the line with the fewest empty cells, its
+/// first empty cell, zero before one. Deterministic, and what every
+/// existing test measures.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct DeterministicChoice;
+
+impl ChoiceOracle for DeterministicChoice {
+    fn pick_cell(&mut self, grid: &Grid, regions: &[Region]) -> Option<(usize, usize)> {
+        pick_guess_cell(grid, regions)
+    }
+
+    fn value_order(&mut self, _row: usize, _col: usize) -> [Cell; 2] {
+        [Cell::Zero, Cell::One]
+    }
+}
+
 /// How far the solver may go (AR5/AR6).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SolveMode {
@@ -199,6 +231,18 @@ pub enum SolveOutcome {
 /// Solve a puzzle (K4/K5/M1). Ladder first; if needed and allowed, DFS
 /// with cheap-tier propagation. Deterministic throughout (AR13).
 pub fn solve(puzzle: &Puzzle, mode: SolveMode, observer: &mut dyn Observer) -> SolveOutcome {
+    solve_with(puzzle, mode, observer, &mut DeterministicChoice)
+}
+
+/// Solve while choosing branches through `oracle`. The generator uses
+/// this to fill an empty grid differently on every seed; everything else
+/// uses `solve`, which supplies the deterministic choice.
+pub fn solve_with(
+    puzzle: &Puzzle,
+    mode: SolveMode,
+    observer: &mut dyn Observer,
+    oracle: &mut dyn ChoiceOracle,
+) -> SolveOutcome {
     let regions = puzzle.regions();
     let invalid = validate_partial(&puzzle.givens, &regions);
     if let Some(v) = invalid.into_iter().next() {
@@ -253,6 +297,7 @@ pub fn solve(puzzle: &Puzzle, mode: SolveMode, observer: &mut dyn Observer) -> S
     };
     let mut ctx = SearchCtx {
         regions: &regions,
+        oracle,
         stages: registry_stages(),
         observer: counting.inner,
         stats: &mut stats,
@@ -298,6 +343,7 @@ impl Observer for CountingObserver<'_> {
 
 struct SearchCtx<'a> {
     regions: &'a [Region],
+    oracle: &'a mut dyn ChoiceOracle,
     stages: Vec<Vec<Box<dyn Strategy>>>,
     observer: &'a mut dyn Observer,
     stats: &'a mut SolveStats,
@@ -351,10 +397,10 @@ fn dfs(mut grid: Grid, depth: usize, ctx: &mut SearchCtx<'_>) -> bool {
         }
         return ctx.solutions.len() >= ctx.want;
     }
-    let Some((row, col)) = pick_guess_cell(&grid, ctx.regions) else {
+    let Some((row, col)) = ctx.oracle.pick_cell(&grid, ctx.regions) else {
         return false;
     };
-    for value in [Cell::Zero, Cell::One] {
+    for value in ctx.oracle.value_order(row, col) {
         let mut branch = grid.clone();
         branch.set(row, col, value);
         if ctx.counting() {

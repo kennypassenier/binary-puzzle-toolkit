@@ -82,3 +82,80 @@ fn collect(dir: &Path, out: &mut Vec<PathBuf>) {
         }
     }
 }
+
+/// B1: the solver branches through a choice oracle so a generator can
+/// fill an empty grid differently each time, while the default oracle
+/// keeps the solver itself bit-deterministic. Both halves of that
+/// promise are asserted here.
+#[test]
+fn b1_a_custom_oracle_reaches_a_different_but_valid_solution() {
+    use bpt_core::event::NullObserver;
+    use bpt_core::grid::{Cell, Grid};
+    use bpt_core::region::{Region, validate_solution};
+    use bpt_core::search::{ChoiceOracle, SolveOutcome, solve_with};
+
+    /// Mirrors the default cell choice but tries one before zero.
+    struct OnesFirst;
+    impl ChoiceOracle for OnesFirst {
+        fn pick_cell(&mut self, grid: &Grid, regions: &[Region]) -> Option<(usize, usize)> {
+            let n = grid.size();
+            for r in 0..n {
+                for c in 0..n {
+                    if grid.get(r, c).is_empty() {
+                        return Some((r, c));
+                    }
+                }
+            }
+            let _ = regions;
+            None
+        }
+        fn value_order(&mut self, _row: usize, _col: usize) -> [Cell; 2] {
+            [Cell::One, Cell::Zero]
+        }
+    }
+
+    let puzzle = parse_line(&".".repeat(36)).unwrap();
+
+    let SolveOutcome::Solved {
+        solution: default_first,
+        ..
+    } = solve(&puzzle, SolveMode::FirstSolution, &mut NullObserver)
+    else {
+        panic!("an empty grid has solutions");
+    };
+    let SolveOutcome::Solved {
+        solution: ones_first,
+        ..
+    } = solve_with(
+        &puzzle,
+        SolveMode::FirstSolution,
+        &mut NullObserver,
+        &mut OnesFirst,
+    )
+    else {
+        panic!("the custom oracle must also find a solution");
+    };
+
+    assert_ne!(
+        default_first, ones_first,
+        "a different branching order must reach a different grid, or the oracle is not being consulted"
+    );
+    for grid in [&default_first, &ones_first] {
+        assert!(
+            validate_solution(grid, &puzzle.regions()).is_empty(),
+            "every oracle must still produce a rule-valid grid"
+        );
+    }
+    assert_eq!(
+        default_first.to_line(),
+        {
+            let SolveOutcome::Solved { solution, .. } =
+                solve(&puzzle, SolveMode::FirstSolution, &mut NullObserver)
+            else {
+                unreachable!()
+            };
+            solution.to_line()
+        },
+        "the default oracle stays bit-deterministic"
+    );
+}
