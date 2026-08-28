@@ -81,6 +81,21 @@ the one-line dot-format contract (binsolve G6).
   crates.io, no installers. Cross-platform (C3) is in scope,
   distribution work is not. *(S/N4)*
 
+  > **Amendment 2026-08-12 (Phase 2 mandatory-items mini-round, V1 →
+  > reversed same day). N4 stands unchanged.** Kenny first chose a
+  > built-in self-update mechanism. Working out its consequences
+  > surfaced three: it needs published releases (narrowing N4), it
+  > collides head-on with C2 (fully offline — an updater must reach the
+  > network), and it clashes with the private repository chosen for
+  > backup in V3a (private releases need a credential on every machine,
+  > in a project designed to have none). Presented with those, Kenny
+  > dropped the feature. **Update mechanism: manual `git pull` +
+  > `cargo build --release`, documented as a numbered procedure in the
+  > operations runbook (Phase 8), including re-pinning the binsolve
+  > revision and re-running the validation batch.** No K13, no release
+  > workflow, no signing model; C2 and N4 both remain exactly as
+  > frozen.
+
 ## Constraints
 
 - **C1 · Rust (stable), library core + thin CLI.** Generator library
@@ -136,6 +151,7 @@ existing tool or engine is adopted.
 | 2026-08-12 | Scope approved (all items unchanged); direction = generator only, scraping dropped |
 | 2026-08-12 | Project name: **binforge** |
 | 2026-08-12 | Location: fresh repo at `~/Projects/binforge`, old scraper repo stays archived |
+| 2026-08-12 | Phase 2 mandatory items: update = manual, documented in the runbook (self-update chosen then dropped once its collisions with C2 and the private repo were worked out); binsolve interface contract recorded in ECOSYSTEM.md; no latch/mailbox/homelab integration; state-in-git with a private GitHub remote, manual push, restore drill M11 |
 
 ## Cross-project dependencies (Phase 4)
 

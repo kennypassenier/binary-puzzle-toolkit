@@ -10,7 +10,7 @@ dated notes under the affected feature.
 | Rating | Count | IDs |
 |---|---|---|
 | Essential | 13 | K1 K2 K3a-e K4 K5 K6 K7 K8 K9 K10 K11 K12 M1 |
-| Desired | 7 | M2 M3 M4 M5 M6 M7 M9 |
+| Desired | 8 | M2 M3 M4 M5 M6 M7 M9 M11 |
 | Later | 2 | M8 M10 |
 | Don't do | 0 | — |
 
@@ -233,6 +233,20 @@ forever.
 **Tests:** it is the test; failures shrink to a minimal reproducing
 seed + geometry (replayable via M1).
 
+### M11 · Restore drill
+Clone the repository fresh into an empty directory, take a manifest
+from a previous batch, regenerate from its recorded seed triple, and
+diff against the original corpus byte for byte. Proves the backup
+restores *and* proves the corpora were genuinely regenerable rather
+than merely claimed to be; fails loudly if reproducibility ever breaks
+silently. Executed in L6 where the validation harness already exists,
+and written up as a numbered restore procedure in the operations
+runbook (Phase 8).
+**Tests:** the drill itself, run against a fixture batch in CI; a
+deliberately altered manifest makes it fail.
+
+> **Added 2026-08-12 (Phase 2 mandatory-items mini-round, V3b).**
+
 ## Later
 
 ### M8 · Printable output (PDF or HTML sheets)
@@ -254,3 +268,4 @@ exist and tier definitions have settled.
 | 2026-08-12 | List frozen (freeze report R1–R3 approved) |
 | 2026-08-12 | Phase 4 mini-rounds: K5/K6 difficulty scale redefined onto binsolve's ladder (L1–L4); M1 reproducibility conditioned on the starting corpus; M2 collisions resolved by deterministic re-roll; M7 cancellation as the exception to all-or-nothing batches |
 | 2026-08-12 | K4/K9 acknowledged as blocked on binsolve mini-rounds B2 (custom geometry) and B3 (rectangular regions) — "no Rust change" holds for binforge, not for binsolve, until B2 lands |
+| 2026-08-12 | Phase 2 mandatory-items mini-round: update mechanism = **manual, documented in the runbook** (self-update chosen at V1, then dropped once its collisions with C2/offline and the private repository were worked out — no K13, no release workflow); ecosystem = binsolve contract recorded in ECOSYSTEM.md, no integration with latch/mailbox/homelab (V2a/V2b); backup = state-in-git + private GitHub remote, manual push, restore drill M11 in L6 (V3a/V3b) |
