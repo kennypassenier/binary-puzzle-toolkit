@@ -7,8 +7,12 @@ mod output;
 use anyhow::{Context, Result, bail};
 use bpt_core::event::{EventLog, NullObserver, Observer, format_trace};
 use bpt_core::parse::{parse_corpus_file, parse_line};
-use bpt_core::region::{validate_givens, validate_solution};
+use bpt_core::region::{PuzzleKind, Region, validate_givens, validate_solution};
 use bpt_core::search::{SolveMode, SolveOutcome, solve};
+use bpt_forge::carve::carve;
+use bpt_forge::fill;
+use bpt_forge::grade::Level;
+use bpt_forge::rng;
 use clap::Parser;
 use output::{canonical_line, marker_line, terminal_display, write_atomic};
 use std::io::{IsTerminal, Write};
@@ -39,6 +43,36 @@ enum Command {
     Solve(SolveArgs),
     /// Watch a puzzle being solved step by step
     Watch(WatchArgs),
+    /// Generate puzzles with a proven-unique solution
+    Forge(ForgeArgs),
+}
+
+#[derive(Parser, Debug)]
+struct ForgeArgs {
+    /// Puzzle type: a size like 8 for a plain n×n, or a tag such as
+    /// 4x6x6, 4x8x8, 9x6x6, 8in14, 6in10in14
+    #[arg(long, default_value = "8")]
+    kind: String,
+
+    /// How many puzzles to generate
+    #[arg(long, default_value_t = 1)]
+    count: u64,
+
+    /// Seed; the same seed always produces the same puzzles
+    #[arg(long, default_value_t = 0)]
+    seed: u64,
+
+    /// Hardest level to allow: L1, L2, L3 or L4
+    #[arg(long, default_value = "L4")]
+    level: String,
+
+    /// Write the puzzles here instead of to standard output
+    #[arg(long, value_name = "FILE")]
+    out: Option<PathBuf>,
+
+    /// Include each solution on its own `solution:` line
+    #[arg(long)]
+    with_solutions: bool,
 }
 
 /// Watching is delegated to the replay viewer, which owns its own
@@ -110,6 +144,7 @@ fn dispatch() -> Result<u8> {
     match Cli::parse().command {
         Command::Solve(args) => run(args),
         Command::Watch(args) => run_watch(args),
+        Command::Forge(args) => run_forge(args),
     }
 }
 
@@ -252,6 +287,78 @@ fn run(args: SolveArgs) -> Result<u8> {
     } else {
         EXIT_SOME_FAILED
     })
+}
+
+/// Generate puzzles. Every one is carved from a filled grid with a
+/// uniqueness proof after each removed clue, so what comes out has
+/// exactly one solution — the same guarantee a published puzzle carries.
+fn run_forge(args: ForgeArgs) -> Result<u8> {
+    let (n, regions) = geometry_for(&args.kind)?;
+    let ceiling = match args.level.to_uppercase().as_str() {
+        "L1" => Level::L1,
+        "L2" => Level::L2,
+        "L3" => Level::L3,
+        "L4" => Level::L4,
+        other => bail!(
+            "unknown level {other:?} — use L1, L2, L3 or L4 \
+             (L1 needs only local patterns, L4 allows guessing)"
+        ),
+    };
+
+    let mut lines = Vec::new();
+    for index in 0..args.count {
+        let mut rng = rng::stream(args.seed, index, 0);
+        let Some(solution) = fill::solution(n, &regions, &mut rng) else {
+            bail!(
+                "the {} geometry has no solution at all — it is over-constrained, \
+                 so no seed will help",
+                args.kind
+            );
+        };
+        let carved = carve(&solution, &regions, ceiling, &mut rng);
+        let tag = tag_for(&args.kind);
+        lines.push(format!("{tag}{}", carved.puzzle.to_line()));
+        if args.with_solutions {
+            lines.push(format!("solution:{}", carved.solution.to_line()));
+        }
+    }
+
+    let body = lines.join("\n") + "\n";
+    match &args.out {
+        Some(path) => write_atomic(path, &body)
+            .with_context(|| format!("cannot write {} — check the path", path.display()))?,
+        None => {
+            print!("{body}");
+            std::io::stdout().flush().ok();
+        }
+    }
+    Ok(EXIT_OK)
+}
+
+/// Map a `--kind` argument onto a grid size and its regions. Plain sizes
+/// and the five tags are built in; the tag travels with the output so a
+/// generated puzzle reads back exactly like a published one.
+fn geometry_for(kind: &str) -> Result<(usize, Vec<Region>)> {
+    if let Ok(n) = kind.parse::<usize>() {
+        if n < 4 || n % 2 != 0 {
+            bail!("size {n} is not usable — use an even size of at least 4");
+        }
+        return Ok((n, vec![Region::square(0, 0, n)]));
+    }
+    let puzzle_kind = PuzzleKind::from_tag(kind).ok_or_else(|| {
+        anyhow::anyhow!(
+            "unknown type {kind:?} — use a size like 8, or one of \
+             4x6x6, 4x8x8, 9x6x6, 8in14, 6in10in14"
+        )
+    })?;
+    Ok((puzzle_kind.grid_size(), puzzle_kind.regions()))
+}
+
+fn tag_for(kind: &str) -> String {
+    match PuzzleKind::from_tag(kind) {
+        Some(k) => k.tag().map(|t| format!("{t}:")).unwrap_or_default(),
+        None => String::new(),
+    }
 }
 
 /// M3: verify corpus-format files (puzzle + solution) instead of solving.

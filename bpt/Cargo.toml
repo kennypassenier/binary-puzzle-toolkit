@@ -7,5 +7,6 @@ license.workspace = true
 
 [dependencies]
 bpt-core = { path = "../bpt-core" }
+bpt-forge = { path = "../bpt-forge" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }

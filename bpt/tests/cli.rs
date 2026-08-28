@@ -242,3 +242,60 @@ fn k7_error_messages_carry_remedies() {
         "usage error must suggest a remedy: {err}"
     );
 }
+
+/// The toolkit's whole point in one test: the generator makes a puzzle,
+/// the solver is handed it with no other information, and must find
+/// exactly the intended solution as the only one.
+#[test]
+fn k29_forge_output_feeds_straight_back_into_solve() {
+    let dir = tmp_dir();
+    let generated = dir.join("generated.txt");
+
+    let out = run_raw(&[
+        "forge",
+        "--kind",
+        "6",
+        "--count",
+        "3",
+        "--seed",
+        "2026",
+        "--with-solutions",
+        "--out",
+        generated.to_str().unwrap(),
+    ]);
+    assert_eq!(code(&out), 0, "{}", String::from_utf8_lossy(&out.stderr));
+
+    let text = fs::read_to_string(&generated).unwrap();
+    let lines: Vec<&str> = text.lines().collect();
+    assert_eq!(lines.len(), 6, "three puzzles plus three solutions");
+
+    for pair in lines.chunks(2) {
+        let (puzzle, solution) = (pair[0], pair[1].strip_prefix("solution:").unwrap());
+        assert!(
+            puzzle.contains('.'),
+            "a generated puzzle must have empty cells: {puzzle}"
+        );
+
+        // The solver gets the puzzle alone and must prove it unique.
+        let solved = run(&["--unique", puzzle]);
+        assert_eq!(code(&solved), 0, "generated puzzle must solve uniquely");
+        assert_eq!(
+            stdout(&solved).trim_end(),
+            solution,
+            "the proven solution must be the one the generator carved from"
+        );
+    }
+}
+
+#[test]
+fn k29_forge_rejects_an_unusable_type_with_a_remedy() {
+    let out = run_raw(&["forge", "--kind", "7"]);
+    assert_eq!(code(&out), 2);
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(err.contains("even size"), "must name the remedy: {err}");
+
+    let out = run_raw(&["forge", "--kind", "nonsense"]);
+    assert_eq!(code(&out), 2);
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(err.contains("4x6x6"), "must list the valid tags: {err}");
+}
