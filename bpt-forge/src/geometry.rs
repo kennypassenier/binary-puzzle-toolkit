@@ -8,30 +8,35 @@
 //! later, and overlapping-band compositions are the one genuinely novel
 //! family in scope (G3).
 
-use crate::error::{GeometryError, SizeProblem};
-use serde::Deserialize;
+// The generator constructs regions; the solver consumes them. One
+// definition, in the shared core, so the two can never drift apart.
+use bpt_core::region::{Region, RuleSet};
 
-/// A resource guard against absurd input, NOT the practical size ceiling:
-/// scope G1 puts that ceiling in the G8 performance measurements and says
-/// it is never hardcoded. Without any bound a file saying
-/// `size = 9223372036854775806` would send the renderer and the coverage
-/// scan into a loop over 2^63 rows, so the guard sits far above any
-/// plausible puzzle (256x256 = 65 536 cells) and refuses only nonsense.
-pub const MAX_SUPPORTED_SIZE: usize = 256;
-
-/// Which Takuzu rules a region enforces. All three hold for every type
-/// known today; the toggles exist so a future counter-example is a data
-/// fix rather than a code change (AR13.4, mirroring binsolve's RuleSet).
+/// How a region is written in a geometry file. Kept separate from
+/// `bpt_core::region::Region` on purpose: the core carries no
+/// dependencies at all, so it cannot derive serde, and the file format
+/// is a generator concern rather than part of the domain model. This is
+/// the only place the two representations meet.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct RuleSet {
-    /// Equal counts of 0 and 1 in every line of the region.
+pub struct RegionSpec {
+    pub row: usize,
+    pub col: usize,
+    pub rows: usize,
+    pub cols: usize,
+    #[serde(default)]
+    pub rules: RuleSetSpec,
+}
+
+/// The file form of a rule set; every rule is on unless a file says
+/// otherwise, so omitting the field means "all rules apply".
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RuleSetSpec {
     #[serde(default = "yes")]
     pub balance: bool,
-    /// No three identical digits adjacent in a line of the region.
     #[serde(default = "yes")]
     pub no_triples: bool,
-    /// No two identical rows, and no two identical columns.
     #[serde(default = "yes")]
     pub unique_lines: bool,
 }
@@ -40,9 +45,18 @@ fn yes() -> bool {
     true
 }
 
-impl Default for RuleSet {
+impl RuleSetSpec {
+    /// Every rule on — the default, and what all six known kinds use.
+    pub const ALL: RuleSetSpec = RuleSetSpec {
+        balance: true,
+        no_triples: true,
+        unique_lines: true,
+    };
+}
+
+impl Default for RuleSetSpec {
     fn default() -> Self {
-        RuleSet {
+        RuleSetSpec {
             balance: true,
             no_triples: true,
             unique_lines: true,
@@ -50,34 +64,24 @@ impl Default for RuleSet {
     }
 }
 
-impl RuleSet {
-    pub const ALL: RuleSet = RuleSet {
-        balance: true,
-        no_triples: true,
-        unique_lines: true,
-    };
+impl From<RuleSetSpec> for RuleSet {
+    fn from(s: RuleSetSpec) -> Self {
+        RuleSet {
+            balance: s.balance,
+            no_triples: s.no_triples,
+            unique_lines: s.unique_lines,
+        }
+    }
 }
 
-/// One rectangular area of the grid that must satisfy `rules` on its own.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Region {
-    pub row: usize,
-    pub col: usize,
-    pub rows: usize,
-    pub cols: usize,
-    #[serde(default)]
-    pub rules: RuleSet,
-}
-
-impl Region {
+impl RegionSpec {
     pub fn square(row: usize, col: usize, n: usize) -> Self {
-        Region {
+        RegionSpec {
             row,
             col,
             rows: n,
             cols: n,
-            rules: RuleSet::ALL,
+            rules: RuleSetSpec::default(),
         }
     }
 
@@ -93,6 +97,28 @@ impl Region {
     }
 }
 
+impl From<RegionSpec> for Region {
+    fn from(s: RegionSpec) -> Self {
+        Region {
+            row: s.row,
+            col: s.col,
+            rows: s.rows,
+            cols: s.cols,
+            rules: s.rules.into(),
+        }
+    }
+}
+use crate::error::{GeometryError, SizeProblem};
+use serde::Deserialize;
+
+/// A resource guard against absurd input, NOT the practical size ceiling:
+/// scope G1 puts that ceiling in the G8 performance measurements and says
+/// it is never hardcoded. Without any bound a file saying
+/// `size = 9223372036854775806` would send the renderer and the coverage
+/// scan into a loop over 2^63 rows, so the guard sits far above any
+/// plausible puzzle (256x256 = 65 536 cells) and refuses only nonsense.
+pub const MAX_SUPPORTED_SIZE: usize = 256;
+
 /// A puzzle type: the grid it lives on plus every region that constrains
 /// it. A plain n×n puzzle is one region covering the whole grid; the
 /// composite types add sub-grids on top of that.
@@ -104,7 +130,7 @@ pub struct Geometry {
     #[serde(default)]
     pub tag: Option<String>,
     pub size: usize,
-    pub regions: Vec<Region>,
+    pub regions: Vec<RegionSpec>,
 }
 
 impl Geometry {
@@ -113,7 +139,7 @@ impl Geometry {
         let geometry = Geometry {
             tag: None,
             size: n,
-            regions: vec![Region::square(0, 0, n)],
+            regions: vec![RegionSpec::square(0, 0, n)],
         };
         geometry.validate()?;
         Ok(geometry)

@@ -2,8 +2,8 @@
 //! AR3b (rectangular regions), AR13.4 (rule toggles), AR13.5 (invalid
 //! and infeasible are different answers).
 
-use binforge_core::error::{GeometryError, SizeProblem};
-use binforge_core::geometry::{BUILTIN_TAGS, Geometry, RuleSet, builtin};
+use bpt_forge::error::{GeometryError, SizeProblem};
+use bpt_forge::geometry::{BUILTIN_TAGS, Geometry, RuleSetSpec, builtin};
 
 #[test]
 fn k4_every_builtin_loads_and_validates() {
@@ -241,7 +241,7 @@ fn k4_innermost_region_wins_for_nested_types() {
 
 #[test]
 fn k4_rule_defaults_are_all_on() {
-    assert_eq!(RuleSet::default(), RuleSet::ALL);
+    assert_eq!(RuleSetSpec::default(), RuleSetSpec::ALL);
 }
 
 #[test]

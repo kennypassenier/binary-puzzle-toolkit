@@ -1,12 +1,12 @@
 //! M6: the geometry inspector's rendering, pinned as snapshots so an
 //! accidental change to the map is visible in review rather than silent.
 
-use binforge_core::geometry::{Geometry, builtin};
-use binforge_core::inspect;
+use bpt_forge::geometry::{Geometry, builtin};
+use bpt_forge::inspect;
 
 #[test]
 fn m6_renders_every_builtin() {
-    for tag in binforge_core::geometry::BUILTIN_TAGS {
+    for tag in bpt_forge::geometry::BUILTIN_TAGS {
         let geometry = builtin(tag).unwrap().unwrap();
         insta::assert_snapshot!(format!("builtin_{tag}"), inspect::render(&geometry));
     }

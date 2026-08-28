@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["bpt-core", "bpt-tui", "bpt"]
+members = ["bpt-core", "bpt-forge", "bpt-tui", "bpt"]
 
 [workspace.package]
 version = "1.0.0"
