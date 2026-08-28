@@ -54,24 +54,24 @@ jobs:
       # magnitude slower and would fail meaninglessly. Without this job
       # nothing automated ever checks the speed promises.
       - name: Threshold test (release)
-        run: cargo test --release -p binsolve-core --test thresholds -- --nocapture
+        run: cargo test --release -p bpt-core --test thresholds -- --nocapture
 
   core-zero-deps:
     name: core has no runtime dependencies
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Assert binsolve-core [dependencies] is empty
+      - name: Assert bpt-core [dependencies] is empty
         run: |
           python3 - <<'EOF'
           import re, sys
-          text = open('binsolve-core/Cargo.toml').read()
+          text = open('bpt-core/Cargo.toml').read()
           m = re.search(r'^\[dependencies\]\s*(.*?)(?=^\[|\Z)', text, re.S | re.M)
           deps = [l for l in (m.group(1).splitlines() if m else [])
                   if l.strip() and not l.strip().startswith('#')]
           if deps:
-              print('binsolve-core has runtime dependencies (AR1 violation):')
+              print('bpt-core has runtime dependencies (AR1 violation):')
               print('\n'.join(deps))
               sys.exit(1)
-          print('OK: binsolve-core is dependency-free')
+          print('OK: bpt-core is dependency-free')
           EOF

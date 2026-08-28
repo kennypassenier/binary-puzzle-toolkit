@@ -37,7 +37,7 @@ jobs:
           cargo clippy --workspace --all-targets -- -D warnings
           cargo test --workspace
       - name: Performance thresholds
-        run: cargo test --release -p binsolve-core --test thresholds -- --nocapture
+        run: cargo test --release -p bpt-core --test thresholds -- --nocapture
 
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
@@ -45,10 +45,10 @@ jobs:
       - name: Package (unix)
         if: matrix.archive == 'tar.gz'
         run: |
-          name="binsolve-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          name="bpt-${GITHUB_REF_NAME}-${{ matrix.target }}"
           mkdir "$name"
-          cp target/${{ matrix.target }}/release/binsolve "$name/"
-          cp target/${{ matrix.target }}/release/binsolve-tui "$name/"
+          cp target/${{ matrix.target }}/release/bpt "$name/"
+          cp target/${{ matrix.target }}/release/bpt-tui "$name/"
           cp README.md CHANGELOG.md LICENSE "$name/"
           tar czf "$name.tar.gz" "$name"
           sha256sum "$name.tar.gz" > "$name.tar.gz.sha256"
@@ -57,10 +57,10 @@ jobs:
         if: matrix.archive == 'zip'
         shell: pwsh
         run: |
-          $name = "binsolve-$env:GITHUB_REF_NAME-${{ matrix.target }}"
+          $name = "bpt-$env:GITHUB_REF_NAME-${{ matrix.target }}"
           New-Item -ItemType Directory -Path $name | Out-Null
-          Copy-Item target/${{ matrix.target }}/release/binsolve.exe $name/
-          Copy-Item target/${{ matrix.target }}/release/binsolve-tui.exe $name/
+          Copy-Item target/${{ matrix.target }}/release/bpt.exe $name/
+          Copy-Item target/${{ matrix.target }}/release/bpt-tui.exe $name/
           Copy-Item README.md,CHANGELOG.md,LICENSE $name/
           Compress-Archive -Path $name -DestinationPath "$name.zip"
           (Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower() + "  $name.zip" |
@@ -70,10 +70,10 @@ jobs:
         with:
           name: ${{ matrix.target }}
           path: |
-            binsolve-*.tar.gz
-            binsolve-*.tar.gz.sha256
-            binsolve-*.zip
-            binsolve-*.zip.sha256
+            bpt-*.tar.gz
+            bpt-*.tar.gz.sha256
+            bpt-*.zip
+            bpt-*.zip.sha256
 
   publish:
     name: publish release
@@ -99,8 +99,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/binsolve-*.tar.gz
-            dist/binsolve-*.zip
+            dist/bpt-*.tar.gz
+            dist/bpt-*.zip
             dist/SHA256SUMS
           body_path: CHANGELOG.md
           draft: true
