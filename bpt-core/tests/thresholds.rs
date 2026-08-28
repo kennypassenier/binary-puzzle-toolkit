@@ -66,9 +66,15 @@ fn k13_adversarial_sparse_inputs_stay_fast() {
             Duration::from_millis(100),
         ),
         // 10x10, 9 givens — slowest unit from a 7.5M-execution fuzz run.
+        // Budgeted at 3 s rather than 1 s because this runs on shared CI
+        // runners too: measured 0.5 s here and 1.7 s on GitHub's Windows
+        // runner, which is roughly 3.5x slower across the board. This is
+        // a regression detector for the pruning that made it fast, not a
+        // scope requirement — G5 is about real published puzzles, and the
+        // worst of those measures 1.2 ms here and 4.3 ms there.
         (
             ".1......................1.......1....................................1.......1.............00....11.",
-            Duration::from_secs(1),
+            Duration::from_secs(3),
         ),
     ];
     for (case, budget) in cases {

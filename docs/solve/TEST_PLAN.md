@@ -79,6 +79,22 @@ their fix:
   aid, not a correctness claim. Revisit when the corpus gains puzzles
   that force guessing.
 
+## Measured on CI, 2026-08-28
+
+GitHub's Windows runner is roughly 3.5x slower than the development
+machine, measured through the release threshold job:
+
+| | here | Windows CI |
+|---|---|---|
+| worst real puzzle (18x18 very hard) | 1.2 ms | 4.3 ms |
+| median real puzzle | 99 µs | 373 µs |
+| 1,000-puzzle batch | 189 ms | 570 ms |
+
+Every G5 target still holds with two orders of magnitude to spare. The
+adversarial sparse input is the one case where the difference matters
+(0.5 s here, 1.7 s there), so its budget is 3 s: it exists to catch a
+regression in the search pruning, not to enforce a scope target.
+
 ## Closed at the Phase 7 gate
 
 - **AR11's orphan `.tmp` cleanup** is now implemented and pinned by
