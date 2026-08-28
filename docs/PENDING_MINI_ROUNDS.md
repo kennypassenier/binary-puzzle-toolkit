@@ -51,6 +51,21 @@ file and is not fooled either way).
 read the message from `-m` / `-F` properly · rely on the git-native
 layer alone for message checking · accept as a known quirk.
 
+## Resolved by the merge, 2026-08-28
+
+The five queued changes the generator was waiting on no longer needed a
+cross-repository mini-round, because there is no longer a second
+repository:
+
+- **B1 choice oracle** — built: `solve_with` takes a `ChoiceOracle`, the
+  default keeps the solver bit-deterministic.
+- **B2 custom geometries** — built: `PuzzleKind::Custom` plus
+  `Puzzle::custom`, so an invented layout solves like a known one.
+- **B3 rectangular regions** — built: `Region` carries `rows`/`cols`
+  with `Region::square` for the six known kinds.
+- **B4 node budget** and **B5 git revision in `--version`** remain open;
+  neither blocks anything today.
+
 ## Q3 · Phase 2's three mandatory items were never discussed
 
 **Area quarantined:** none — these are additions, nothing built on them.

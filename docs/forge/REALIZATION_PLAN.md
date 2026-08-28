@@ -10,10 +10,10 @@ AFK mode off). Enforcement was installed before L0 per the procedure.
 |---|---|---|
 | L0 · Walking skeleton, CI green | [meta] | **done** (signed off 2026-08-12) |
 | L1 · Geometry model + inspect | K23, M25, AR22b, AR32.4, AR32.5 | **built + reviewed, gate pending (AFK)** |
-| L2 · binsolve mini-rounds B1–B3 | external (binsolve repo) | **blocked — awaiting Kenny, see docs/PENDING_MINI_ROUNDS.md** |
-| L3 · Random solution filler | K20, M20, AR21, AR28, AR32.1 | not started |
-| L4 · Carve loop + grading + targeting | K21, K24, K25, AR23, AR31 | not started |
-| L5 · Output, batches, CLI | K26, K27, K29, M21, M23, M26, AR27, AR29, AR30 | atomic write layer built early (AR27, AR29); rest not started |
+| L2 · solver changes B1–B3 | AR21, AR22b | **done** (2026-08-28, dissolved by the merge: rectangular regions, choice oracle, custom geometries) |
+| L3 · Random solution filler | K20, M20, AR21, AR28, AR32.1 | **done** (2026-08-28, seeded streams + reservoir cell choice) |
+| L4 · Carve loop + grading + targeting | K21, K24, K25, AR23, AR31 | **done** (2026-08-28, tier-ceiling carve, verified through the solver) |
+| L5 · Output, batches, CLI | K26, K27, K29, M21, M23, M26, AR27, AR29, AR30 | **partly done**: `bpt forge` writes puzzles and solutions; batches, manifests and progress reporting still open |
 | L6 · Independent validation harness + restore drill | K31, D1, M30, AR27, B5 | not started |
 | L7 · Parallelism, benchmarks, baselines | M22, K30, AR25, B4 | not started |
 | L8 · Invented types + property testing | K28, D4, M28, M24 | not started |

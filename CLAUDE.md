@@ -13,9 +13,9 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 
 | Field | Value |
 |---|---|
-| Current phase | solver half: 9 (release prepared, not tagged); generator half: 6 (L1 done) |
+| Current phase | solver half: 9 (release prepared, not tagged); generator half: 6 (L1-L4 done, L5 partly) |
 | Last completed gate | merge decisions + phase 2 mandatory items (2026-08-28) |
-| Next gate | combined report: the merge, then the generator's L2 |
+| Next gate | combined report: the merge and the generator's L2-L5 |
 | AFK mode | ON since 2026-08-28 — gates accumulate, deviations queue as mini-rounds |
 
 <!-- Update this block after every completed gate. -->
