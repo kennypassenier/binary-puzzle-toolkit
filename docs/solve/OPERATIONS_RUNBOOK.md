@@ -80,7 +80,7 @@ and the location, and exits `1`.
    ```
    binsolve --check --file <the new file>
    ```
-4. Update the corpus count in `binsolve-core/tests/solve.rs` — the test
+4. Update the corpus count in `bpt-core/tests/solve.rs` — the test
    asserts an exact inventory rather than a floor, so that deleting
    fixtures cannot go unnoticed.
 5. Run `cargo test --workspace`; the corpus meta-test will parse the new
@@ -120,7 +120,7 @@ on Linux and Windows on every push.
 ## 7 · Run the fuzzers
 
 Requires the nightly toolchain and cargo-fuzz (see
-[DEVELOPMENT.md](DEVELOPMENT.md)). The solver target is run in chunks
+[DEVELOPMENT.md](../DEVELOPMENT.md)). The solver target is run in chunks
 because libFuzzer's own memory grows over long runs:
 
 ```
@@ -132,7 +132,7 @@ done
 ```
 
 Any crash artefact becomes a regression test **before** it is fixed.
-Record the finding in `binsolve-core/fuzz/README.md`.
+Record the finding in `bpt-core/fuzz/README.md`.
 
 ## 8 · Restore the commit gates after cloning
 
@@ -144,7 +144,7 @@ git config core.hooksPath      # must print .githooks
 ```
 
 Without it, commits are not gated at all. See
-[DEVELOPMENT.md](DEVELOPMENT.md) for what the gates check.
+[DEVELOPMENT.md](../DEVELOPMENT.md) for what the gates check.
 
 ## 9 · Recover a failed write
 

@@ -71,7 +71,7 @@ Kenny already scheduled these for right after the L9 gate.
 
 ## Q4 · A code comment argues something that measurement contradicts
 
-**Area quarantined:** the comment in `binsolve-core/src/parse.rs` that
+**Area quarantined:** the comment in `bpt-core/src/parse.rs` that
 justifies the integer-sqrt guard.
 
 **What happened.** The comment reads "floating point may round either

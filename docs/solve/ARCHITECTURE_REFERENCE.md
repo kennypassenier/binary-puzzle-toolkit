@@ -44,7 +44,7 @@ puzzle are *neighbours* in the whole-grid region but sit in *different*
 blocks. A no-triple rule across that seam exists only at the whole-grid
 level, while a count rule can fire inside one block while the wide row
 stays silent. Both directions are pinned by tests in
-`binsolve-core/tests/specials.rs`.
+`bpt-core/tests/specials.rs`.
 
 `RuleSet` allows a region to enforce a subset of the rules. Today every
 region enables all three; the field exists so that a future puzzle type
@@ -134,7 +134,7 @@ The core is bit-deterministic: fixed iteration order over regions, lines
 and strategies; no hash-based containers in solver paths; no dependence
 on time. Three things rest on it — the pinned trace fixture, trace
 replay, and the premise that a parallel batch would equal a sequential
-one. `binsolve-core/tests/determinism.rs` asserts it rather than
+one. `bpt-core/tests/determinism.rs` asserts it rather than
 assuming it.
 
 ## Text format
@@ -155,7 +155,7 @@ a blank line is reported rather than skipped — dropping it would shift
 every later line onto the wrong puzzle.
 
 The grammar is pinned as regression vectors in
-`binsolve-core/tests/fixtures/format/`, and those files are marked
+`bpt-core/tests/fixtures/format/`, and those files are marked
 `-text` in `.gitattributes` so no platform can rewrite their line
 endings.
 

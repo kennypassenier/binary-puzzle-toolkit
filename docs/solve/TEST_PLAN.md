@@ -8,28 +8,28 @@ limitations or closed gaps once the Phase 7 gate is answered.
 
 | Suite | Location | Proves |
 |---|---|---|
-| Unit — grid | `binsolve-core/src/grid.rs` | cell/char round-trip, row-major indexing, line serialization (K7, AR2) |
-| Unit — regions | `binsolve-core/src/region.rs` | the six region decompositions, solution and givens validation, a named violation per rule family (K2, K6, M3) |
-| Unit — parser | `binsolve-core/src/parse.rs` | tag and size inference, CRLF tolerance, multi-byte rejection, a remedy in every malformed-input message (K7) |
-| Unit — strategies | `binsolve-core/src/strategy.rs` | every strategy against the scenarios inherited from the C# README, plus the completion-feasibility check (K3) |
-| Unit — search | `binsolve-core/src/search.rs` | the fixpoint ladder, contradiction on conflicting deductions, trace stability (K3, K6, K16) |
-| Unit — events | `binsolve-core/src/event.rs` | trace step formatting (K16) |
-| Format vectors | `binsolve-core/tests/format_vectors.rs` | the frozen grammar as files: 8 valid lines round-trip, 7 invalid lines fail with the exact expected class (AR7, K7) |
-| Round-trip property | `binsolve-core/tests/roundtrip.rs` | parse→serialize identity over random grids of all six kinds; arbitrary strings never panic (K7) |
-| Corpus meta-test | `binsolve-core/tests/corpus.rs` | every corpus file parses; every published solution validates against its full region decomposition (M4, AR3) |
-| Solve | `binsolve-core/tests/solve.rs` | the C# cascade scenario and its refuted branch, the uniqueness search on a composite, multiple-solution reporting, every contradiction reason, corpus inventory (K4, K5, K6, M4) |
-| Specials | `binsolve-core/tests/specials.rs` | boundary deductions per type: across a block seam (whole-grid only), a block quota (block only), inner and outer nested regions (K2a–K2e) |
-| Strategy-only sweep | `binsolve-core/tests/sweep.rs` | every corpus puzzle solved by strategies alone matches its published solution; no false contradictions (M1) |
-| Difficulty | `binsolve-core/tests/difficulty.rs` | grading against the site's own labels: 19/20 exact, never more than one band off (M2) |
-| Determinism | `binsolve-core/tests/determinism.rs` | identical traces across runs for ladder and search puzzles and the whole corpus; one full trace pinned as a fixture (AR13, K16) |
-| Thresholds | `binsolve-core/tests/thresholds.rs` | the G5 targets in release, plus three adversarial sparse inputs with per-input budgets (K13) |
-| Benchmarks | `binsolve-core/benches/solve.rs` | trend data per puzzle, per type, uniqueness mode, 1,000-puzzle batch (K13) |
-| Fuzzing | `binsolve-core/fuzz/` | the parser never panics and round-trips what it accepts; the solver terminates and never reports an invalid solution (M7) |
-| CLI E2E | `binsolve/tests/cli.rs` | the real binary on real files: single and batch, 1:1 line mapping including blank lines, markers, exit codes, CRLF, atomic `--out`, both `--explain` channels, `--check`, `--no-backtrack`, `--unique` (K8–K12, K16, M1, M3) |
-| Atomic write | `binsolve/src/output.rs` | replacing an existing file leaves no temp behind (AR11, happy path) |
-| TUI render model | `binsolve-tui/src/replay.rs`, `ui.rs` | stepping, reversibility, backtracks restoring the pre-guess frame, stats accumulation, grid/step/stats rendering (K15, AR9) |
-| TUI frames | `binsolve-tui/tests/render.rs` | full frames through ratatui's in-memory backend, including the largest grid and an unsolvable puzzle (K15) |
-| Trace replay property | `binsolve-tui/tests/replay_property.rs` | replaying a recorded log reproduces the solver's own solution, over the corpus and over grids that require guessing (K16, AR9) |
+| Unit — grid | `bpt-core/src/grid.rs` | cell/char round-trip, row-major indexing, line serialization (K7, AR2) |
+| Unit — regions | `bpt-core/src/region.rs` | the six region decompositions, solution and givens validation, a named violation per rule family (K2, K6, M3) |
+| Unit — parser | `bpt-core/src/parse.rs` | tag and size inference, CRLF tolerance, multi-byte rejection, a remedy in every malformed-input message (K7) |
+| Unit — strategies | `bpt-core/src/strategy.rs` | every strategy against the scenarios inherited from the C# README, plus the completion-feasibility check (K3) |
+| Unit — search | `bpt-core/src/search.rs` | the fixpoint ladder, contradiction on conflicting deductions, trace stability (K3, K6, K16) |
+| Unit — events | `bpt-core/src/event.rs` | trace step formatting (K16) |
+| Format vectors | `bpt-core/tests/format_vectors.rs` | the frozen grammar as files: 8 valid lines round-trip, 7 invalid lines fail with the exact expected class (AR7, K7) |
+| Round-trip property | `bpt-core/tests/roundtrip.rs` | parse→serialize identity over random grids of all six kinds; arbitrary strings never panic (K7) |
+| Corpus meta-test | `bpt-core/tests/corpus.rs` | every corpus file parses; every published solution validates against its full region decomposition (M4, AR3) |
+| Solve | `bpt-core/tests/solve.rs` | the C# cascade scenario and its refuted branch, the uniqueness search on a composite, multiple-solution reporting, every contradiction reason, corpus inventory (K4, K5, K6, M4) |
+| Specials | `bpt-core/tests/specials.rs` | boundary deductions per type: across a block seam (whole-grid only), a block quota (block only), inner and outer nested regions (K2a–K2e) |
+| Strategy-only sweep | `bpt-core/tests/sweep.rs` | every corpus puzzle solved by strategies alone matches its published solution; no false contradictions (M1) |
+| Difficulty | `bpt-core/tests/difficulty.rs` | grading against the site's own labels: 19/20 exact, never more than one band off (M2) |
+| Determinism | `bpt-core/tests/determinism.rs` | identical traces across runs for ladder and search puzzles and the whole corpus; one full trace pinned as a fixture (AR13, K16) |
+| Thresholds | `bpt-core/tests/thresholds.rs` | the G5 targets in release, plus three adversarial sparse inputs with per-input budgets (K13) |
+| Benchmarks | `bpt-core/benches/solve.rs` | trend data per puzzle, per type, uniqueness mode, 1,000-puzzle batch (K13) |
+| Fuzzing | `bpt-core/fuzz/` | the parser never panics and round-trips what it accepts; the solver terminates and never reports an invalid solution (M7) |
+| CLI E2E | `bpt/tests/cli.rs` | the real binary on real files: single and batch, 1:1 line mapping including blank lines, markers, exit codes, CRLF, atomic `--out`, both `--explain` channels, `--check`, `--no-backtrack`, `--unique` (K8–K12, K16, M1, M3) |
+| Atomic write | `bpt/src/output.rs` | replacing an existing file leaves no temp behind (AR11, happy path) |
+| TUI render model | `bpt-tui/src/replay.rs`, `ui.rs` | stepping, reversibility, backtracks restoring the pre-guess frame, stats accumulation, grid/step/stats rendering (K15, AR9) |
+| TUI frames | `bpt-tui/tests/render.rs` | full frames through ratatui's in-memory backend, including the largest grid and an unsolvable puzzle (K15) |
+| Trace replay property | `bpt-tui/tests/replay_property.rs` | replaying a recorded log reproduces the solver's own solution, over the corpus and over grids that require guessing (K16, AR9) |
 
 CI runs formatting, clippy with warnings-as-errors and the full suite on
 Ubuntu, Windows and an Arch container. A separate job asserts the

@@ -54,7 +54,7 @@ Criterion benchmarks cover per-puzzle solving, uniqueness proving and a
 
 ## Fuzzing
 
-Requires the nightly toolchain; see [../binsolve-core/fuzz/README.md](../binsolve-core/fuzz/README.md)
+Requires the nightly toolchain; see [../bpt-core/fuzz/README.md](../bpt-core/fuzz/README.md)
 for the targets, the chunked-run workaround and the findings so far.
 
 ```
@@ -69,7 +69,7 @@ This project follows the development procedure in
 `~/Projects/dev-procedure`. Practical consequences for a contributor:
 
 - Every commit message names the feature IDs it implements; see
-  [FEATURES.md](FEATURES.md) for what each ID means.
+  [solve/FEATURES.md](solve/FEATURES.md) for what each ID means.
 - Every bug fix is preceded by a test that fails without the fix.
 - Frozen decisions (the feature list, the architecture) change only
   through a recorded amendment, not silently.

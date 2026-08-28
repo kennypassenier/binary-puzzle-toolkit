@@ -96,7 +96,7 @@ It should not: every input line produces exactly one output line, blank
 lines included. If you see a mismatch, that is a bug worth reporting —
 the case that used to cause it (silently dropping blank lines) is now
 pinned by `k9_blank_lines_keep_the_line_mapping` in
-`binsolve/tests/cli.rs`.
+`bpt/tests/cli.rs`.
 
 ### The terminal shows a grid where a script expects one line
 

@@ -8,7 +8,7 @@ Status: **in development.** The solver, CLI and TUI are built, tested
 and hardened; documentation is complete. There is no published binary
 yet — build from source. Windows is build-verified (CI compiles and
 runs the suite there) but not yet runtime-verified on real hardware:
-see [docs/WINDOWS_TEST_CHECKLIST.md](docs/WINDOWS_TEST_CHECKLIST.md).
+see [docs/solve/WINDOWS_TEST_CHECKLIST.md](docs/solve/WINDOWS_TEST_CHECKLIST.md).
 
 ## Build and run
 
@@ -54,11 +54,11 @@ setup, the quality gates and how to run the fuzzers.
 
 | Document | For |
 |---|---|
-| [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | every command and flag, with worked examples |
-| [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md) | numbered procedures: batches, verification, fuzzing, recovery |
-| [docs/DEBUGGING_GUIDE.md](docs/DEBUGGING_GUIDE.md) | symptom → cause → remedy for every error message |
-| [docs/ARCHITECTURE_REFERENCE.md](docs/ARCHITECTURE_REFERENCE.md) | how the solver works, as built |
-| [docs/TEST_PLAN.md](docs/TEST_PLAN.md) | what is proven where, and what is deliberately not |
+| [docs/solve/USER_GUIDE.md](docs/solve/USER_GUIDE.md) | every command and flag, with worked examples |
+| [docs/solve/OPERATIONS_RUNBOOK.md](docs/solve/OPERATIONS_RUNBOOK.md) | numbered procedures: batches, verification, fuzzing, recovery |
+| [docs/solve/DEBUGGING_GUIDE.md](docs/solve/DEBUGGING_GUIDE.md) | symptom → cause → remedy for every error message |
+| [docs/solve/ARCHITECTURE_REFERENCE.md](docs/solve/ARCHITECTURE_REFERENCE.md) | how the solver works, as built |
+| [docs/solve/TEST_PLAN.md](docs/solve/TEST_PLAN.md) | what is proven where, and what is deliberately not |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | working on the code; the one-time hook activation |
 
 ## License
