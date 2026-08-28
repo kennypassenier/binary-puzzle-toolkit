@@ -98,12 +98,14 @@ fn run() -> Result<u8> {
             })?
             .lines()
             .map(str::to_owned)
-            .filter(|l| !l.trim().is_empty())
+            // No filtering: K9 promises output line N describes input
+            // line N, so a blank line keeps its slot and is reported as
+            // invalid rather than silently shifting everything after it.
             .collect(),
         _ => unreachable!("guarded above"),
     };
     if inputs.is_empty() {
-        bail!("input file has no puzzles — add one puzzle per line");
+        bail!("input file is empty — add one puzzle per line");
     }
 
     let mode = if args.no_backtrack {

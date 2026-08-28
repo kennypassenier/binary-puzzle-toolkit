@@ -32,15 +32,27 @@ impl Replay {
         let mut frames = Vec::with_capacity(events.len() + 1);
         let mut grid = puzzle.givens.clone();
         frames.push(grid.clone());
+        // A refuted branch also deduced cells before it failed, so
+        // undoing a guess means restoring the whole grid as it stood
+        // before that guess — clearing only the guessed cell would
+        // leave the branch's deductions on screen as state the solver
+        // never held.
+        let mut before_guess: Vec<Grid> = Vec::new();
         for event in &events {
             match event {
                 SolveEvent::Deduced {
                     row, col, value, ..
-                }
-                | SolveEvent::Guessed {
-                    row, col, value, ..
                 } => grid.set(*row, *col, *value),
-                SolveEvent::Backtracked { row, col, .. } => grid.set(*row, *col, Cell::Empty),
+                SolveEvent::Guessed {
+                    row, col, value, ..
+                } => {
+                    before_guess.push(grid.clone());
+                    grid.set(*row, *col, *value);
+                }
+                SolveEvent::Backtracked { row, col, .. } => match before_guess.pop() {
+                    Some(restored) => grid = restored,
+                    None => grid.set(*row, *col, Cell::Empty),
+                },
                 SolveEvent::SolutionFound => {}
             }
             frames.push(grid.clone());
@@ -136,7 +148,7 @@ impl Replay {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use binsolve_core::event::EventLog;
+    use binsolve_core::event::{EventLog, SolveEvent};
     use binsolve_core::parse::parse_line;
     use binsolve_core::search::{SolveMode, SolveOutcome, solve};
 
@@ -219,6 +231,39 @@ mod tests {
         replay.jump_to_end();
         assert_eq!(replay.stats_so_far().deductions, replay.stats.deductions);
         assert_eq!(replay.difficulty().name(), "easy");
+    }
+
+    /// Regression (phase 7 audit, 2026-08-28): a Backtracked event
+    /// cleared only the guessed cell, but the refuted branch had also
+    /// emitted Deduced events. Those cells stayed filled, so the viewer
+    /// saw a grid the solver never held — values later flipped with no
+    /// event explaining them, and the displayed grid could break the
+    /// rules. Undoing a guess must restore the frame from just before it.
+    #[test]
+    fn k15_backtracking_restores_the_frame_before_the_guess() {
+        let mut replay = replay_of(&".".repeat(36));
+        let mut before_guess: Vec<Grid> = Vec::new();
+        let mut checked = 0usize;
+        while replay.step_forward() {
+            match replay.current_event() {
+                Some(SolveEvent::Guessed { .. }) => {
+                    // Frame before this guess = the previous frame.
+                    before_guess.push(replay.frames[replay.cursor - 1].clone());
+                }
+                Some(SolveEvent::Backtracked { .. }) => {
+                    let expected = before_guess.pop().expect("a backtrack undoes a guess");
+                    assert_eq!(
+                        *replay.grid(),
+                        expected,
+                        "after backtrack at step {} the frame must equal the one before its guess",
+                        replay.cursor
+                    );
+                    checked += 1;
+                }
+                _ => {}
+            }
+        }
+        assert!(checked > 0, "the empty 6x6 must require guessing");
     }
 
     #[test]

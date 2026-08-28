@@ -71,6 +71,30 @@ fn k9_batch_file_maps_one_to_one_with_markers() {
     assert_eq!(lines[3], EASY6_SOLUTION);
 }
 
+/// Regression (phase 7 audit, 2026-08-28): blank lines were filtered
+/// out of the input, so every later output line described a different
+/// input line than its position claimed. K9 promises output line N
+/// corresponds to input line N, which only holds if nothing is dropped.
+#[test]
+fn k9_blank_lines_keep_the_line_mapping() {
+    let dir = tmp_dir();
+    let input = dir.join("blanks.txt");
+    fs::write(&input, format!("{EASY6}\n\n{EASY6}\n")).unwrap();
+
+    let out = run(&["--file", input.to_str().unwrap()]);
+    let text = stdout(&out);
+    let lines: Vec<&str> = text.lines().collect();
+    assert_eq!(
+        lines.len(),
+        3,
+        "three input lines must yield three output lines, got: {text:?}"
+    );
+    assert_eq!(lines[0], EASY6_SOLUTION);
+    assert_eq!(lines[1], "#invalid:", "the blank line keeps its slot");
+    assert_eq!(lines[2], EASY6_SOLUTION);
+    assert_eq!(code(&out), 1, "a blank line is a failed puzzle");
+}
+
 #[test]
 fn k9_crlf_input_is_accepted() {
     let dir = tmp_dir();
