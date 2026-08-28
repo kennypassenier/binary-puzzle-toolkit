@@ -28,7 +28,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 
 /// Windows keeps a handle briefly after a process exits (indexers, virus
 /// scanners), so a rename can fail with a sharing violation that is gone
@@ -39,6 +39,20 @@ const RENAME_BACKOFF: Duration = Duration::from_millis(20);
 /// Write `contents` to `path`, atomically. The temp file is created in the
 /// same directory so the rename cannot cross a filesystem boundary.
 pub fn write(path: &Path, contents: &str) -> Result<()> {
+    // Checked up front rather than inferred from the rename's error code:
+    // Windows CI showed it reports this permanent situation with a code
+    // that also means "file temporarily locked", so classifying after the
+    // fact retried a doomed rename five times and then blamed the wrong
+    // cause. The condition itself is unambiguous on every platform.
+    if path.is_dir() {
+        bail!(
+            "cannot write {} — a directory already exists at that path\n\
+             Remedy: pick a different output path, or remove the directory; \
+             a puzzle file and a directory cannot share a name.",
+            path.display()
+        );
+    }
+
     let dir = path.parent().unwrap_or(Path::new("."));
     fs::create_dir_all(dir).with_context(|| format!("cannot create {}", dir.display()))?;
 

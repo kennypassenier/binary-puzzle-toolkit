@@ -114,8 +114,8 @@ fn ar10_a_permanent_rename_failure_is_reported_without_five_retries() {
     let text = format!("{error:#}");
     assert!(text.contains("Remedy:"), "{text}");
     assert!(
-        !text.contains("after 5 attempts"),
-        "must not claim a retry storm: {text}"
+        text.contains("a directory already exists"),
+        "must name the real cause, not a file lock: {text}"
     );
     // Five backoffs take at least 200 ms; failing fast is the point. This
     // is the assertion that caught the real bug: on Windows, renaming onto
