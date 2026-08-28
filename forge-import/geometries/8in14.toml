@@ -1,0 +1,16 @@
+# An 8x8 puzzle centered inside a 14x14 (binarypuzzle.com "8x8 in 14x14").
+# A digit can be deduced from the inner puzzle or from the outer one.
+tag = "8in14"
+size = 14
+
+[[regions]]
+row = 0
+col = 0
+rows = 14
+cols = 14
+
+[[regions]]
+row = 3
+col = 3
+rows = 8
+cols = 8

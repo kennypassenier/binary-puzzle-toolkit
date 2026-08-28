@@ -1,0 +1,5 @@
+# Format regression vectors and geometry fixtures are byte-exact test
+# data (AR7, AR13.6): never let git translate their line endings.
+tests/fixtures/** -text
+**/tests/fixtures/** -text
+geometries/** -text

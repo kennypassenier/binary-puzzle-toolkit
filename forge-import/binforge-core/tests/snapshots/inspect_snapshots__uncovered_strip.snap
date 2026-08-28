@@ -1,0 +1,22 @@
+---
+source: binforge-core/tests/inspect_snapshots.rs
+expression: rendered
+---
+(standard, untagged) — 8x8, 1 region(s)
+
+    01234567
+  0 AAAAAA..
+  1 AAAAAA..
+  2 AAAAAA..
+  3 AAAAAA..
+  4 AAAAAA..
+  5 AAAAAA..
+  6 AAAAAA..
+  7 AAAAAA..
+
+Regions (innermost wins in the map above):
+  A at (0,0) 8x6 [balance, no-triples, unique-lines]
+
+Verdict: structurally valid, but 16 cell(s) are covered by no region, starting at (0,6).
+Remedy: check the origins — an off-by-one leaves a strip unconstrained.
+Feasibility is not checked here: proving a geometry solvable needs the solver (L3).
