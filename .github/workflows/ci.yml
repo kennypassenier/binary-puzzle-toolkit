@@ -95,6 +95,53 @@ jobs:
         working-directory: ${{ runner.temp }}/restore-clone
         run: cargo test --release -p bpt --test restore_drill -- --nocapture
 
+  coverage:
+    name: coverage (informational)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      # Informational on purpose: a coverage threshold rewards tests that
+      # execute lines over tests that check behaviour. The number is here
+      # to be looked at, not to gate a merge.
+      - name: Measure
+        run: cargo llvm-cov --workspace --summary-only
+
+  purity:
+    name: the libraries stay pure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # AR20 promised this check and nothing implemented it: the two
+      # library crates are supposed to hold logic only, with all I/O,
+      # threads and clock reads in the binary. `std::time` is banned
+      # outright rather than just SystemTime — a work budget must never
+      # be wall-clock (AR26), and Instant is what one would reach for.
+      - name: Assert the libraries contain no I/O, threads or clock
+        run: |
+          python3 - <<'EOF'
+          import pathlib, sys
+          banned = ["std::fs", "println!", "eprintln!", "std::thread",
+                    "std::time", "Instant", "SystemTime"]
+          bad = []
+          for crate in ["bpt-core/src", "bpt-forge/src"]:
+              for path in pathlib.Path(crate).rglob("*.rs"):
+                  text = path.read_text()
+                  # Test modules may time and print; the library may not.
+                  head = text.split("#[cfg(test)]")[0]
+                  for token in banned:
+                      if token in head:
+                          bad.append(f"{path}: {token}")
+          if bad:
+              print("AR20 violation — the libraries must stay pure:")
+              print("\n".join(bad))
+              sys.exit(1)
+          print("OK: no I/O, threads or clock in bpt-core or bpt-forge")
+          EOF
+
   core-zero-deps:
     name: core has no runtime dependencies
     runs-on: ubuntu-latest

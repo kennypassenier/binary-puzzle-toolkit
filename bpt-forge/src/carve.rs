@@ -482,6 +482,39 @@ mod tests {
     }
 
     #[test]
+    fn k25_at_l4_the_ceiling_can_reject_nothing() {
+        // The claim the loop's fast path rests on: at L4 the ladder is
+        // never run, because a candidate is solvable by construction and
+        // L4 is the top of the scale. Argued in a comment until this
+        // test executed it — over four geometries and eight seeds,
+        // including puzzles carved to every other ceiling, which are
+        // exactly the intermediate states the loop passes through.
+        let geometries: [(usize, Vec<Region>); 4] = [
+            (6, standard(6)),
+            (8, standard(8)),
+            (10, standard(10)),
+            (8, vec![Region::square(0, 0, 8), Region::square(2, 2, 4)]),
+        ];
+        for (n, regions) in &geometries {
+            for seed in 1..9u64 {
+                for ceiling in [Level::L1, Level::L2, Level::L3, Level::L4] {
+                    let mut rng = crate::rng::stream(seed, 0, 0);
+                    let Some(solution) = crate::fill::solution(*n, regions, &mut rng) else {
+                        continue;
+                    };
+                    let carved = carve(&solution, regions, ceiling, &mut rng);
+                    let puzzle = Puzzle::custom(carved.puzzle.clone(), regions.to_vec());
+                    assert!(
+                        fits_ceiling(&puzzle, Level::L4),
+                        "n={n} seed={seed} ceiling={}: L4 rejected a carved puzzle",
+                        ceiling.name()
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
     fn b4_a_carve_reports_whether_its_budget_ever_ran_out() {
         // On an 8x8 nothing is expensive enough to exhaust the budget,
         // so the honest report is zero. The value matters because it is
