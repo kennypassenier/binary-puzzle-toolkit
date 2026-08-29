@@ -1,0 +1,26 @@
+# Two 8x8 regions that overlap in a 4x4 middle, inside a 12x12.
+# No published type has partially overlapping regions: the five
+# either tile without touching or nest completely.
+#
+# Deliberately untagged. Where the two blocks sit is a choice, not
+# something a name implies, so this type travels as a file.
+size = 12
+
+[[regions]]
+row = 0
+col = 0
+rows = 12
+cols = 12
+
+[[regions]]
+row = 0
+col = 0
+rows = 8
+cols = 8
+
+[[regions]]
+row = 4
+col = 4
+rows = 8
+cols = 8
+

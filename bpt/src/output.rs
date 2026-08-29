@@ -17,7 +17,10 @@ pub fn marker_line(marker: &str, original: &str) -> String {
 /// The canonical single-line result for one puzzle (K10).
 pub fn canonical_line(outcome: &SolveOutcome, puzzle: &Puzzle, original: &str) -> String {
     match outcome {
-        SolveOutcome::Solved { solution, .. } => match puzzle.kind.tag() {
+        // write_tag, not kind.tag: a composed type has no reserved name
+        // in the enum, and dropping its tag would turn the answer into a
+        // line that reads as a plain grid.
+        SolveOutcome::Solved { solution, .. } => match puzzle.write_tag() {
             Some(tag) => format!("{tag}:{}", solution.to_line()),
             None => solution.to_line(),
         },

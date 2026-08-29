@@ -76,6 +76,8 @@ jobs:
         run: cargo test --release -p bpt --test validation -- --ignored --nocapture
       - name: Invented types end to end
         run: cargo test --release -p bpt --test invented_types -- --ignored --nocapture
+      - name: Format vectors and the tag grammar
+        run: cargo test --release -p bpt-core --test specials --test format_vectors
 
   restore-drill:
     name: restore drill from a fresh clone

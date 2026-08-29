@@ -234,3 +234,72 @@ fn b2_an_invented_geometry_solves_like_a_known_one() {
         }
     }
 }
+
+/// S6b/K28: a composite tag describes its own layout, so an invented
+/// type works without being registered anywhere.
+mod composed_tags {
+    use bpt_core::region::{PuzzleKind, compose_from_tag};
+
+    /// The five published types are the proof that the grammar is not
+    /// invented for the occasion: reading their names produces exactly
+    /// the regions the solver has always used for them.
+    #[test]
+    fn k22_the_grammar_reproduces_every_published_type() {
+        for tag in ["4x6x6", "4x8x8", "9x6x6", "8in14", "6in10in14"] {
+            let kind = PuzzleKind::from_tag(tag).expect("a published type");
+            let composed = compose_from_tag(tag).unwrap_or_else(|| panic!("{tag} must parse"));
+            assert_eq!(composed.size, kind.grid_size(), "{tag}: size");
+
+            let mut expected = kind.regions();
+            let mut actual = composed.regions.clone();
+            let key = |r: &bpt_core::region::Region| (r.row, r.col, r.rows, r.cols);
+            expected.sort_by_key(key);
+            actual.sort_by_key(key);
+            assert_eq!(actual, expected, "{tag}: regions");
+        }
+    }
+
+    #[test]
+    fn k28_an_invented_name_composes_without_being_registered() {
+        // Two tiles of the grammar combined: a four-quadrant 12x12
+        // centred in a 16x16. Nothing knows this name.
+        assert!(PuzzleKind::from_tag("4x6x6in16").is_none());
+        let composed = compose_from_tag("4x6x6in16").expect("the grammar covers it");
+        assert_eq!(composed.size, 16);
+        // The whole 16x16, the 12x12, and four 6x6 quadrants inside it.
+        assert_eq!(composed.regions.len(), 6);
+        assert!(composed.regions.iter().any(|r| (r.row, r.rows) == (0, 16)));
+        assert!(composed.regions.iter().any(|r| (r.row, r.rows) == (2, 12)));
+        assert_eq!(
+            composed
+                .regions
+                .iter()
+                .filter(|r| r.rows == 6 && r.cols == 6)
+                .count(),
+            4
+        );
+    }
+
+    /// A name the grammar cannot read must be refused, never guessed at.
+    /// Reading `9x6x6` as a plain 18x18 would solve a different puzzle
+    /// and call it the same one.
+    #[test]
+    fn k22_a_name_outside_the_grammar_is_refused() {
+        for tag in [
+            "5x6x6",     // five blocks lay out no square
+            "4x6x8",     // blocks are square by definition
+            "4x7x7",     // an odd side cannot balance
+            "6in9",      // 9 is odd, and 6 has no centre in it
+            "8in10in9",  // the sizes must grow outward
+            "12",        // a plain grid needs no tag
+            "4x6x6in12", // the term already fills 12: no room to nest
+            "banaan",
+            "",
+        ] {
+            assert!(
+                compose_from_tag(tag).is_none(),
+                "{tag:?} must not be read as a type"
+            );
+        }
+    }
+}

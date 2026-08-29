@@ -1,0 +1,42 @@
+# Four 6x6 blocks forming a 12x12, itself centred in a 16x16 — an
+# invented type combining the two shapes the published types use.
+# The name says the whole layout, so the grammar can read it back.
+tag = "4x6x6in16"
+size = 16
+
+[[regions]]
+row = 0
+col = 0
+rows = 16
+cols = 16
+
+[[regions]]
+row = 2
+col = 2
+rows = 12
+cols = 12
+
+[[regions]]
+row = 2
+col = 2
+rows = 6
+cols = 6
+
+[[regions]]
+row = 2
+col = 8
+rows = 6
+cols = 6
+
+[[regions]]
+row = 8
+col = 2
+rows = 6
+cols = 6
+
+[[regions]]
+row = 8
+col = 8
+rows = 6
+cols = 6
+

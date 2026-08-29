@@ -9,7 +9,9 @@ mod parallel;
 use anyhow::{Context, Result, bail};
 use bpt_core::event::{EventLog, NullObserver, Observer, format_trace};
 use bpt_core::parse::{parse_corpus_file, parse_line};
-use bpt_core::region::{Puzzle, PuzzleKind, Region, validate_givens, validate_solution};
+use bpt_core::region::{
+    Puzzle, PuzzleKind, Region, compose_from_tag, validate_givens, validate_solution,
+};
 use bpt_core::search::{SolveMode, SolveOutcome, solve};
 use bpt_forge::batch::{self, Outcome, Plan, Shortfall};
 use bpt_forge::carve::Symmetry;
@@ -756,13 +758,20 @@ fn geometry_for(kind: &str) -> Result<(usize, Vec<Region>)> {
         }
         return Ok((n, vec![Region::square(0, 0, n)]));
     }
-    let puzzle_kind = PuzzleKind::from_tag(kind).ok_or_else(|| {
-        anyhow::anyhow!(
-            "unknown type {kind:?} — use a size like 8, or one of \
-             4x6x6, 4x8x8, 9x6x6, 8in14, 6in10in14"
-        )
-    })?;
-    Ok((puzzle_kind.grid_size(), puzzle_kind.regions()))
+    if let Some(puzzle_kind) = PuzzleKind::from_tag(kind) {
+        return Ok((puzzle_kind.grid_size(), puzzle_kind.regions()));
+    }
+    // A name the grammar can read describes its own layout, so an
+    // invented type needs no entry here (S6b).
+    if let Some(composed) = compose_from_tag(kind) {
+        return Ok((composed.size, composed.regions));
+    }
+    bail!(
+        "unknown type {kind:?} — use a size like 8, one of \
+         4x6x6, 4x8x8, 9x6x6, 8in14, 6in10in14, or a composed name such as \
+         4x6x6in16 (n blocks of a×a as <n>x<a>x<a>, centred nesting as <term>in<size>). \
+         A layout whose positions are a choice needs --geometry instead"
+    )
 }
 
 /// The prefix a generated line carries.
@@ -815,11 +824,19 @@ fn read_geometry(path: &Path) -> Result<bpt_forge::geometry::Geometry> {
         .map_err(|e| anyhow::anyhow!("{} is not a usable geometry: {e}", path.display()))
 }
 
+/// The prefix a generated line carries for `--kind`.
+///
+/// A composed name is written back verbatim: it is the description that
+/// lets a reader rebuild the regions, so dropping it would produce a
+/// line that reads as a plain grid.
 fn tag_for(kind: &str) -> String {
-    match PuzzleKind::from_tag(kind) {
-        Some(k) => k.tag().map(|t| format!("{t}:")).unwrap_or_default(),
-        None => String::new(),
+    if let Some(k) = PuzzleKind::from_tag(kind) {
+        return k.tag().map(|t| format!("{t}:")).unwrap_or_default();
     }
+    if compose_from_tag(kind).is_some() {
+        return format!("{kind}:");
+    }
+    String::new()
 }
 
 /// M3: verify corpus-format files (puzzle + solution) instead of solving.

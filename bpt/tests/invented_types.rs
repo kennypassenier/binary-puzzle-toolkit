@@ -23,8 +23,17 @@ fn geometry(name: &str) -> PathBuf {
         .join(format!("{name}.toml"))
 }
 
-/// The two invented types, with the grid size each one covers.
-const INVENTED: [(&str, usize); 2] = [("4x10x10", 20), ("8in12in16", 16)];
+/// The invented types that exist as geometry files, with their sizes.
+const INVENTED: [(&str, usize); 3] = [("4x10x10", 20), ("8in12in16", 16), ("4x6x6in16", 16)];
+
+/// The invented types whose names the grammar can read, so they need no
+/// geometry file to travel: the tag itself describes the layout.
+///
+/// Split by cost. The grammar does not care how big a grid is, so the
+/// small names prove it on every commit and the large ones — the types
+/// actually adopted — are checked in release by CI.
+const COMPOSED_CHEAP: [(&str, usize); 3] = [("4x4x4", 8), ("4in8", 8), ("4x4x4in12", 12)];
+const COMPOSED: [(&str, usize); 3] = [("4x10x10", 20), ("8in12in16", 16), ("4x6x6in16", 16)];
 
 /// The end-to-end run is release-only: a 20x20 in a debug build takes
 /// minutes per puzzle, so this would make every commit unusable. CI runs
@@ -188,4 +197,105 @@ fn k28_a_geometry_that_does_not_fit_the_grid_is_refused() {
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert!(!stderr.contains("panicked"), "{stderr}");
     fs::remove_file(&file).ok();
+}
+
+/// S6b: a composed name carries its own layout, so a generated line
+/// reads back as the same puzzle without anything being registered.
+#[test]
+fn k28_a_composed_tag_survives_the_round_trip() {
+    round_trip(&COMPOSED_CHEAP);
+}
+
+/// The same check on the sizes actually adopted, which are minutes each
+/// in a debug build.
+#[test]
+#[ignore = "16x16 and 20x20 are minutes each in debug; CI runs this in release"]
+fn k28_the_adopted_composed_types_survive_the_round_trip() {
+    round_trip(&COMPOSED);
+}
+
+fn round_trip(names: &[(&str, usize)]) {
+    for &(name, size) in names {
+        assert!(
+            bpt_core::region::PuzzleKind::from_tag(name).is_none(),
+            "{name} is a published type after all"
+        );
+        let out = std::env::temp_dir().join(format!("bpt-composed-{name}.txt"));
+        let forged = bpt()
+            .args(["forge", "--kind", name])
+            .args(["--count", "2", "--seed", "5", "--level", "L2", "--out"])
+            .arg(&out)
+            .output()
+            .expect("bpt runs");
+        assert_eq!(
+            forged.status.code(),
+            Some(0),
+            "{name}: {}",
+            String::from_utf8_lossy(&forged.stderr)
+        );
+
+        let text = fs::read_to_string(&out).expect("the generated file");
+        for line in text.lines() {
+            assert!(line.starts_with(&format!("{name}:")), "{name}: {line}");
+            assert_eq!(line.len(), name.len() + 1 + size * size);
+        }
+
+        // Solved with no geometry passed alongside: everything the
+        // reader needs is in the name.
+        let solved = bpt()
+            .args(["solve", "--file"])
+            .arg(&out)
+            .arg("--unique")
+            .output()
+            .expect("bpt runs");
+        let stdout = String::from_utf8_lossy(&solved.stdout);
+        assert_eq!(solved.status.code(), Some(0), "{name}: {stdout}");
+        assert!(!stdout.contains("multiple"), "{name}: {stdout}");
+        assert!(
+            stdout.lines().all(|l| l.starts_with(&format!("{name}:"))),
+            "the answer keeps the tag: {stdout}"
+        );
+        fs::remove_file(&out).ok();
+    }
+}
+
+/// The positional family stays on --geometry, which is the line the
+/// grammar deliberately draws: where two overlapping blocks sit is a
+/// choice, and a name cannot imply it.
+#[test]
+#[ignore = "generates a 12x12 repeatedly; CI runs this in release"]
+fn k28_the_overlapping_type_works_through_its_geometry_file() {
+    let out = std::env::temp_dir().join("bpt-overlap.txt");
+    let forged = bpt()
+        .args(["forge", "--geometry"])
+        .arg(geometry("overlap8in12"))
+        .args(["--count", "3", "--seed", "5", "--out"])
+        .arg(&out)
+        .output()
+        .expect("bpt runs");
+    assert_eq!(forged.status.code(), Some(0));
+
+    let with = bpt()
+        .args(["solve", "--file"])
+        .arg(&out)
+        .arg("--geometry")
+        .arg(geometry("overlap8in12"))
+        .arg("--unique")
+        .output()
+        .expect("bpt runs");
+    assert_eq!(with.status.code(), Some(0));
+    assert!(!String::from_utf8_lossy(&with.stdout).contains("multiple"));
+
+    // And the overlap really does the work: without it, ambiguous.
+    let without = bpt()
+        .args(["solve", "--file"])
+        .arg(&out)
+        .arg("--unique")
+        .output()
+        .expect("bpt runs");
+    assert!(
+        String::from_utf8_lossy(&without.stdout).contains("multiple"),
+        "the overlapping regions must be what pins the puzzle down"
+    );
+    fs::remove_file(&out).ok();
 }

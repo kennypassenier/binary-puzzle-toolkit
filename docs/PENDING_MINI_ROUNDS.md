@@ -151,7 +151,7 @@ is one puzzle, which on a 16x16 is seconds. Mini-round **B4**'s
 deterministic node budget is what would make it finer, and B4 is
 Kenny's own "later".
 
-## Q6 · Invented types have no tag, and the format cannot grow one by itself
+## Q6 · Invented types and their tags — DECIDED 2026-08-29
 
 **Area quarantined:** the puzzle-line tag vocabulary.
 ↳ K28 = two invented types end-to-end; S6b = Kenny's frozen choice that
@@ -171,12 +171,51 @@ A test pins what is at stake: the same 8in12in16 puzzle read *without*
 its geometry parses as a plain 16x16 and has more than one solution.
 Nothing crashes, which is exactly why it must not stay implicit.
 
-**Options:** register invented types in the built-in vocabulary, like
-the five published ones · resolve an unknown prefix by looking for
-`geometries/<tag>.toml`, which makes any invented type work without
-code changes but gives the format a filesystem dependency · make the
-prefix self-describing so the line carries its own regions · leave
-`--geometry` as the only way, and never tag invented types.
+**Decided 2026-08-29: read the tag as a description.** None of the four
+options above was taken, because Kenny asked the right question first —
+why would an invented type not simply work like the published ones? —
+and measuring the answer produced a fifth.
+
+The five published names were never labels. `4x6x6` says "four 6x6
+blocks"; `6in10in14` says "a 6x6 inside a 10x10 inside a 14x14". Two
+rules, composable:
+
+- `<n>x<a>x<a>` — n blocks of a×a laid out √n by √n
+- `<term>in<size>` — that term centred in a larger square, chainable
+
+A parser of those two rules was held against all seven geometry files
+and reproduces every one exactly, including the two invented types that
+had been written by hand. So `4x6x6in16:` works the moment someone
+writes it, with no vocabulary to maintain and no dependency on files on
+disk.
+
+**Where the line falls.** A type whose parts could sit anywhere — two
+blocks side by side, two that overlap — cannot be named without turning
+the name into a file format (`8at0_0and8at4_4in12`). Those keep using
+`--geometry`, which already works on both halves. So: *a type whose
+layout follows from its name gets a tag; a type whose placement is a
+choice travels as a file.*
+
+A name outside the grammar is refused, never guessed at. Reading
+`9x6x6` as a plain 18x18 would solve a different puzzle and report it
+as the same one.
+
+**Adopted alongside (Kenny, N1).** Two new families, chosen after each
+candidate was generated and then re-solved with its inner regions
+ignored — if it stays unique that way, the regions were not doing
+anything:
+
+- **`4x6x6in16`** — a four-quadrant 12x12 centred in a 16x16, which is
+  Kenny's own suggestion and combines both published shapes. A middle
+  cell sits in three regions at once. Nameable by the grammar.
+- **`overlap8in12`** — two 8x8 regions overlapping in a 4x4 middle,
+  inside a 12x12. No published type has partially overlapping regions.
+  Positional, so it stays a geometry file.
+
+Measured and rejected: different sizes side by side works at 10x10 but
+the 14x14 version could not be decided in five minutes even on an empty
+grid; flat bands are provably impossible and now fail structurally
+(see the K23 commit).
 
 ## Q7 · Generation has no upper bound on the largest grids — DECIDED 2026-08-29
 

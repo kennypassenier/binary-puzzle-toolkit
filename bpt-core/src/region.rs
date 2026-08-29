@@ -104,6 +104,85 @@ pub enum PuzzleKind {
     },
 }
 
+/// A composite type whose whole layout follows from its name (S6b).
+///
+/// The five published types are not arbitrary labels — they are
+/// descriptions, and always were. `4x6x6` says "four 6x6 blocks";
+/// `6in10in14` says "a 6x6 inside a 10x10 inside a 14x14". Reading them
+/// that way means an invented type that follows the same naming needs no
+/// entry anywhere: `4x6x6in16` is a four-quadrant 12x12 centred in a
+/// 16x16, and it works the moment someone writes it.
+///
+/// Two shapes, composable:
+/// - `<n>x<a>x<a>` — n blocks of a×a laid out √n by √n.
+/// - `<term>in<size>` — the term centred in a larger square; chainable.
+///
+/// Deliberately no positions. A type whose parts could sit anywhere —
+/// two blocks side by side, two that overlap — cannot be described by a
+/// name without turning the name into a file format. Those travel as a
+/// geometry file instead, which both halves already accept.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ComposedKind {
+    pub size: usize,
+    pub regions: Vec<Region>,
+}
+
+/// Read a tag as a description. `None` means the name does not follow
+/// the grammar — never "assume a plain grid", which would silently solve
+/// a composite as something easier.
+pub fn compose_from_tag(tag: &str) -> Option<ComposedKind> {
+    let mut terms = tag.split("in");
+    let inner = terms.next()?;
+    let (mut size, mut regions) = compose_term(inner)?;
+    for outer in terms {
+        let outer: usize = outer.parse().ok()?;
+        // Centred, and the offset has to be whole: a 6 in a 9 has no
+        // centre, and a name that asks for one is not a type.
+        if outer <= size || !outer.is_multiple_of(2) || !(outer - size).is_multiple_of(2) {
+            return None;
+        }
+        let offset = (outer - size) / 2;
+        for region in &mut regions {
+            region.row += offset;
+            region.col += offset;
+        }
+        regions.push(Region::all(0, 0, outer));
+        size = outer;
+    }
+    // A bare size is a plain grid, which needs no tag and must not get
+    // one: `12:` and an untagged 12x12 line would be two spellings of
+    // the same puzzle.
+    if regions.len() < 2 {
+        return None;
+    }
+    Some(ComposedKind { size, regions })
+}
+
+/// One term: either `<n>x<a>x<a>` or a bare size.
+fn compose_term(term: &str) -> Option<(usize, Vec<Region>)> {
+    let mut parts = term.split('x');
+    let first: usize = parts.next()?.parse().ok()?;
+    match (parts.next(), parts.next(), parts.next()) {
+        (None, None, None) => {
+            if first == 0 || !first.is_multiple_of(2) {
+                return None;
+            }
+            Some((first, vec![Region::all(0, 0, first)]))
+        }
+        (Some(a), Some(b), None) => {
+            let (a, b): (usize, usize) = (a.parse().ok()?, b.parse().ok()?);
+            // Square blocks only, an even side, and a count that really
+            // is a square number — `5x6x6` describes no layout.
+            let side = first.isqrt();
+            if a != b || a == 0 || !a.is_multiple_of(2) || side * side != first {
+                return None;
+            }
+            Some((side * a, tiled(side, a)))
+        }
+        _ => None,
+    }
+}
+
 impl PuzzleKind {
     pub fn from_tag(tag: &str) -> Option<Self> {
         match tag {
@@ -183,6 +262,11 @@ pub struct Puzzle {
     /// regions from `kind` so that a puzzle read from text can never
     /// disagree with its tag.
     pub custom_regions: Option<Vec<Region>>,
+    /// The tag a composed type was read from, kept so it can be written
+    /// back. A tag that survives the round trip is the whole point: a
+    /// generated `4x6x6in16` line has to read as the same puzzle it was
+    /// written from.
+    pub composed_tag: Option<String>,
 }
 
 impl Puzzle {
@@ -200,7 +284,22 @@ impl Puzzle {
             kind: PuzzleKind::Custom { n: givens.size() },
             givens,
             custom_regions: Some(regions),
+            composed_tag: None,
         }
+    }
+
+    /// A custom geometry that came from a tag, and can be written back
+    /// as one.
+    pub fn composed(givens: Grid, regions: Vec<Region>, tag: String) -> Self {
+        Puzzle {
+            composed_tag: Some(tag),
+            ..Puzzle::custom(givens, regions)
+        }
+    }
+
+    /// The tag this puzzle should be written with, if any.
+    pub fn write_tag(&self) -> Option<&str> {
+        self.kind.tag().or(self.composed_tag.as_deref())
     }
 }
 

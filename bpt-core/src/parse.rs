@@ -3,7 +3,7 @@
 //! Hand-rolled Error impls per the T5 amendment (core stays dep-free).
 
 use crate::grid::{Cell, Grid};
-use crate::region::{Puzzle, PuzzleKind};
+use crate::region::{Puzzle, PuzzleKind, compose_from_tag};
 use std::error::Error;
 use std::fmt;
 
@@ -20,7 +20,7 @@ pub enum ParseError {
         found: char,
     },
     TagLengthMismatch {
-        tag: &'static str,
+        tag: String,
         expected: usize,
         got: usize,
     },
@@ -109,22 +109,45 @@ pub fn parse_line(line: &str) -> Result<Puzzle, ParseError> {
     if line.is_empty() {
         return Err(ParseError::EmptyLine);
     }
-    let (kind, grid_part) = match line.split_once(':') {
-        Some((tag, rest)) => {
-            let kind = PuzzleKind::from_tag(tag).ok_or_else(|| ParseError::UnknownTag {
-                tag: tag.to_string(),
-            })?;
-            (Some(kind), rest)
-        }
-        None => (None, line),
+    // A tag is either one of the five published names or a description
+    // the grammar can read (S6b). A name it cannot read is refused —
+    // falling back to "plain grid" would solve a composite as something
+    // easier and call it the same puzzle.
+    let (kind, composed, grid_part) = match line.split_once(':') {
+        Some((tag, rest)) => match PuzzleKind::from_tag(tag) {
+            Some(kind) => (Some(kind), None, rest),
+            None => {
+                let composed = compose_from_tag(tag).ok_or_else(|| ParseError::UnknownTag {
+                    tag: tag.to_string(),
+                })?;
+                (None, Some((tag.to_string(), composed)), rest)
+            }
+        },
+        None => (None, None, line),
     };
+    if let Some((tag, composed)) = composed {
+        let cells = parse_grid_chars(grid_part)?;
+        let expected = composed.size * composed.size;
+        if cells.len() != expected {
+            return Err(ParseError::TagLengthMismatch {
+                tag,
+                expected,
+                got: cells.len(),
+            });
+        }
+        return Ok(Puzzle::composed(
+            Grid::from_cells(composed.size, cells),
+            composed.regions,
+            tag,
+        ));
+    }
     let cells = parse_grid_chars(grid_part)?;
     let kind = match kind {
         Some(kind) => {
             let expected = kind.grid_size() * kind.grid_size();
             if cells.len() != expected {
                 return Err(ParseError::TagLengthMismatch {
-                    tag: kind.tag().expect("tagged kinds have a tag"),
+                    tag: kind.tag().expect("tagged kinds have a tag").to_string(),
                     expected,
                     got: cells.len(),
                 });
@@ -157,13 +180,14 @@ pub fn parse_line(line: &str) -> Result<Puzzle, ParseError> {
         // Text always describes one of the six known kinds; a custom
         // geometry reaches the solver through Puzzle::custom instead.
         custom_regions: None,
+        composed_tag: None,
     })
 }
 
 /// Canonical serialization: parse(serialize(p)) == p, and for canonical
 /// input serialize(parse(line)) == line (round-trip property, K7).
 pub fn serialize(puzzle: &Puzzle) -> String {
-    match puzzle.kind.tag() {
+    match puzzle.write_tag() {
         Some(tag) => format!("{tag}:{}", puzzle.givens.to_line()),
         None => puzzle.givens.to_line(),
     }
