@@ -147,6 +147,19 @@ The validating binary is **built from the pinned rev**, never taken
 from `PATH`, and its rev is recorded in every manifest; a binsolve
 mini-round puts the git rev into `--version` (today: `0.1.0` forever).
 
+**Amendment 2026-08-29 (L6, implementation).** The merge dissolved the
+pinning problem rather than solving it. There is no second repository to
+pin: the harness runs the binary Cargo just built for the test
+(`CARGO_BIN_EXE_bpt`), so generator and validator are the same build by
+construction and version skew cannot occur. What the decision was
+protecting — never validating against an unknown binary from `PATH` —
+holds more strongly than the original mechanism could deliver.
+
+The independence the decision asks for is unaffected: validation goes
+through `bpt solve --file --unique`, the solver's search, which shares
+no code with fill or carve. B5 is built, so every manifest still records
+the revision that produced the batch.
+
 ### AR28 · Duplicates: deterministic re-roll on an attempt counter
 The RNG stream for a puzzle is a function of **(batch seed, index,
 attempt)**. A collision — within the batch or against the existing
