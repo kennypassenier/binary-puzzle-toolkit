@@ -13,9 +13,9 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 
 | Field | Value |
 |---|---|
-| Current phase | 7 done for both halves (hardening; gaps closed or recorded in docs/TEST_PLAN.md). Next: 8, documentation |
-| Last completed gate | merge decisions + phase 2 mandatory items (2026-08-28) |
-| Next gate | phase 8: per-document approval. Documentation still describes the solver only and still says binsolve |
+| Current phase | 9 — release prepared, not tagged. Phases 0-8 complete for both halves |
+| Last completed gate | phase 8, all six documents approved (2026-08-30) |
+| Next gate | phase 9: the release report, ending in "tag & release?" |
 | AFK mode | OFF since 2026-08-29 — the queue was presented and cleared |
 
 <!-- Update this block after every completed gate. -->

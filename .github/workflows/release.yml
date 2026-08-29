@@ -37,7 +37,9 @@ jobs:
           cargo clippy --workspace --all-targets -- -D warnings
           cargo test --workspace
       - name: Performance thresholds
-        run: cargo test --release -p bpt-core --test thresholds -- --nocapture
+        run: |
+          cargo test --release -p bpt-core --test thresholds -- --nocapture
+          cargo test --release -p bpt-forge --test thresholds -- --nocapture
 
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
