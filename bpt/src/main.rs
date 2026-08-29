@@ -598,14 +598,17 @@ fn forge_batch(args: &ForgeArgs, plan: &Plan, dir: &Path) -> Result<u8> {
         }
     };
 
-    if std::io::stdout().is_terminal() {
-        println!(
-            "{} puzzle(s) in {} ({} ms)",
-            written.completed,
-            dir.display(),
-            written.elapsed_ms
-        );
-    }
+    // Always, not only on a terminal. With --out-dir the puzzles go to
+    // files, so stdout carries no data to keep clean, and a run that
+    // says nothing in a script looks the same whether it wrote eight
+    // puzzles or none. It goes to stderr because it is a report, not
+    // data (K16a). Found by using the tool as a user would.
+    eprintln!(
+        "{} puzzle(s) in {} ({} ms)",
+        written.completed,
+        dir.display(),
+        written.elapsed_ms
+    );
     report_shortfalls(&outcome);
     report_clue_target(&outcome, plan.target_clues);
     Ok(exit_for(&outcome))

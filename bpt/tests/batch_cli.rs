@@ -322,9 +322,19 @@ fn m26_a_piped_batch_carries_no_progress_noise() {
     let out = forge(&dir, &["--count", "5"]);
     assert_eq!(out.status.code(), Some(0));
     // Command::output() gives the child pipes, not a terminal, so this
-    // is exactly the case M26 promises stays clean.
+    // is exactly the case M26 promises stays clean. Clean means no
+    // progress spam — no rewritten counter — not silence: the one-line
+    // summary is a report and belongs on stderr whether or not anyone
+    // is watching a terminal.
     let stderr = String::from_utf8_lossy(&out.stderr);
-    assert!(stderr.is_empty(), "a pipe must get nothing: {stderr:?}");
+    assert!(
+        !stderr.contains('\r') && !stderr.contains("forging"),
+        "a pipe must get no progress spam: {stderr:?}"
+    );
+    assert!(
+        stderr.contains("5 puzzle(s) in"),
+        "but it must still say what it did: {stderr:?}"
+    );
     let stdout = String::from_utf8_lossy(&out.stdout);
     assert!(
         !stdout.contains("forging") && !stdout.contains('\r'),
