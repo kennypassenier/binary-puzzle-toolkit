@@ -134,6 +134,20 @@ pub fn run_with(
     }
 }
 
+/// M30: rebuild one puzzle from the three numbers a manifest records
+/// for it, without replaying the batch it came from.
+///
+/// This is the whole point of storing `(seed, index, attempt)`: the
+/// restore drill regenerates a stored batch from its manifest and
+/// compares byte for byte, which only proves anything if a single
+/// puzzle is reachable on its own. It shares no state with `run` — if
+/// the two ever disagree, the drill is what says so.
+pub fn regenerate(plan: &Plan, index: u64, attempt: u64) -> Option<Carved> {
+    let mut rng = stream(plan.seed, index, attempt);
+    let solution = fill::solution(plan.n, &plan.regions, &mut rng)?;
+    Some(carve(&solution, &plan.regions, plan.ceiling, &mut rng))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -206,6 +220,42 @@ mod tests {
             .map(|p| p.carved.puzzle.to_line())
             .collect();
         assert_eq!(all.len(), 8, "the two runs must not overlap");
+    }
+
+    #[test]
+    fn m30_a_single_puzzle_regenerates_from_its_recorded_triple() {
+        let plan = Plan::new(6, standard(6), Level::L4, 77, 6);
+        let out = run(&plan, &mut HashSet::new());
+        assert!(out.complete());
+        for produced in &out.produced {
+            let again = regenerate(&plan, produced.index, produced.attempt)
+                .expect("a puzzle that was generated once regenerates");
+            assert_eq!(
+                again.puzzle.to_line(),
+                produced.carved.puzzle.to_line(),
+                "index {} attempt {}",
+                produced.index,
+                produced.attempt
+            );
+            assert_eq!(again.solution.to_line(), produced.carved.solution.to_line());
+            assert_eq!(again.level, produced.carved.level);
+        }
+    }
+
+    #[test]
+    fn m30_a_wrong_triple_regenerates_a_different_puzzle() {
+        // The drill can only catch a broken manifest if the triple
+        // actually determines the puzzle.
+        let plan = Plan::new(6, standard(6), Level::L4, 77, 2);
+        let right = regenerate(&plan, 0, 0).unwrap();
+        assert_ne!(
+            right.puzzle.to_line(),
+            regenerate(&plan, 1, 0).unwrap().puzzle.to_line()
+        );
+        assert_ne!(
+            right.puzzle.to_line(),
+            regenerate(&plan, 0, 1).unwrap().puzzle.to_line()
+        );
     }
 
     #[test]

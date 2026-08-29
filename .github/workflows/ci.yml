@@ -56,6 +56,22 @@ jobs:
       - name: Threshold test (release)
         run: cargo test --release -p bpt-core --test thresholds -- --nocapture
 
+  restore-drill:
+    name: restore drill from a fresh clone
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      # M30 asks for a clone into an empty directory on purpose: it
+      # proves the fixture batch is really committed and really restores,
+      # rather than being reproduced from whatever the working tree
+      # happens to hold.
+      - name: Clone into an empty directory
+        run: git clone --no-hardlinks . "$RUNNER_TEMP/restore-clone"
+      - name: Regenerate the stored batch from its manifest
+        working-directory: ${{ runner.temp }}/restore-clone
+        run: cargo test --release -p bpt --test restore_drill -- --nocapture
+
   core-zero-deps:
     name: core has no runtime dependencies
     runs-on: ubuntu-latest
