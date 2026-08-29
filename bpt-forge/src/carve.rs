@@ -132,14 +132,23 @@ mod tests {
 
     #[test]
     fn k25_a_higher_ceiling_carves_further() {
-        // More freedom should not produce a puzzle with more clues.
-        let easy = carved_6x6(9, Level::L1);
-        let free = carved_6x6(9, Level::L4);
+        // Stated over seeds rather than per seed on purpose. Carving is
+        // greedy, so it is not monotone in the ceiling: a removal that a
+        // higher ceiling accepts changes the grid, and can block a later
+        // removal the lower ceiling would have taken. A single seed can
+        // therefore come out one clue heavier at L4 than at L1 without
+        // anything being wrong. The direction only holds in aggregate.
+        let seeds = 1..21;
+        let (mut easy, mut free) = (0usize, 0usize);
+        for seed in seeds.clone() {
+            easy += carved_6x6(seed, Level::L1).clues;
+            free += carved_6x6(seed, Level::L4).clues;
+        }
         assert!(
-            free.clues <= easy.clues,
-            "L4 kept {} clues, L1 kept {} — a higher ceiling should carve at least as deep",
-            free.clues,
-            easy.clues
+            free < easy,
+            "over {} seeds L4 kept {free} clues and L1 kept {easy} — \
+             a higher ceiling must carve deeper on average",
+            seeds.count()
         );
     }
 

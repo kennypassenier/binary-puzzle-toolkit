@@ -6,6 +6,7 @@ use bpt_core::event::NullObserver;
 use bpt_core::grid::{Cell, Grid};
 use bpt_core::region::{Puzzle, Region};
 use bpt_core::search::{ChoiceOracle, SolveMode, SolveOutcome, solve_with};
+use bpt_core::strategy::LineView;
 use rand::Rng;
 use rand_chacha::ChaCha8Rng;
 
@@ -17,20 +18,43 @@ struct RandomChoice<'a> {
 }
 
 impl ChoiceOracle for RandomChoice<'_> {
-    fn pick_cell(&mut self, grid: &Grid, _regions: &[Region]) -> Option<(usize, usize)> {
-        // Reservoir sampling over the empty cells: one pass, no
-        // allocation, and every empty cell equally likely. Picking the
-        // first empty cell instead would bias every puzzle towards the
-        // same shape regardless of the seed.
-        let n = grid.size();
+    fn pick_cell(&mut self, grid: &Grid, regions: &[Region]) -> Option<(usize, usize)> {
+        // Same shape as the solver's own choice: branch inside the line
+        // that has the fewest empty cells left. The randomness sits in
+        // the tie-breaks — which minimal line, which cell inside it —
+        // and in the value order, which is enough for two seeds to
+        // produce different solutions.
+        //
+        // An earlier version sampled uniformly over *all* empty cells.
+        // That is fine on a plain grid but pathological on the nested
+        // composites, where a cell chosen far from the constrained part
+        // teaches the search nothing: filling one 14x14 `6in10in14`
+        // took 0.4 s for one seed and over ten minutes for the next.
+        // Under this rule the same grids fill in milliseconds.
+        let mut best: Option<usize> = None;
         let mut chosen = None;
-        let mut seen = 0u32;
-        for row in 0..n {
-            for col in 0..n {
-                if grid.get(row, col).is_empty() {
-                    seen += 1;
-                    if self.rng.random_range(0..seen) == 0 {
-                        chosen = Some((row, col));
+        let mut ties = 0u32;
+        for region in regions {
+            for is_row in [true, false] {
+                for index in 0..region.line_count(is_row) {
+                    let view = LineView::new(grid, *region, is_row, index);
+                    let empties: Vec<usize> = (0..view.len())
+                        .filter(|i| view.cells()[*i].is_empty())
+                        .collect();
+                    if empties.is_empty() {
+                        continue;
+                    }
+                    // A new minimum restarts the reservoir; a tie joins it.
+                    if best.is_none_or(|count| empties.len() < count) {
+                        best = Some(empties.len());
+                        ties = 0;
+                    } else if best != Some(empties.len()) {
+                        continue;
+                    }
+                    ties += 1;
+                    if self.rng.random_range(0..ties) == 0 {
+                        let pick = empties[self.rng.random_range(0..empties.len())];
+                        chosen = Some(view.pos(pick));
                     }
                 }
             }

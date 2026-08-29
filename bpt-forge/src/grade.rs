@@ -7,6 +7,8 @@ use bpt_core::event::NullObserver;
 use bpt_core::region::Puzzle;
 use bpt_core::search::{SolveMode, SolveOutcome, solve};
 
+use serde::{Deserialize, Serialize};
+
 /// The generator's four-level scale (AR24).
 ///
 /// Deliberately different from the solver's own three-band grade, which
@@ -14,7 +16,9 @@ use bpt_core::search::{SolveMode, SolveOutcome, solve};
 /// real puzzles. Here the levels are stages of the ladder, which are
 /// directly measurable, and telling L1 from L2 is the whole point of
 /// being able to *target* a difficulty.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// Serialized as its own name (`"L3"`), so a manifest reads the way the
+/// `--level` flag is written rather than as a struct variant.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Level {
     /// Local patterns and line counts suffice (ladder stage 0).
     L1,

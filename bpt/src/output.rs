@@ -4,7 +4,6 @@
 use bpt_core::grid::Grid;
 use bpt_core::region::Puzzle;
 use bpt_core::search::{SolveOutcome, SolveStats, grade};
-use std::fs;
 use std::io;
 use std::path::Path;
 use std::time::Duration;
@@ -99,78 +98,23 @@ pub fn terminal_display(
     Some(out)
 }
 
-/// Atomically replace `path` with `content` (AR11): temp file in the
-/// destination directory, flush + sync, rename over the target. On
-/// Windows a sharing violation (virus scanner, open editor) is retried
-/// briefly before failing.
+/// Atomically replace `path` with `content` (AR11).
+///
+/// Delegates to the toolkit's atomic writer, which is the generator's
+/// implementation: it checks for a directory up front instead of
+/// inferring it from a rename error code, retries only on a genuine
+/// Windows sharing violation rather than on any I/O error, and syncs the
+/// destination directory so the rename is actually durable. The solver
+/// half carried a simpler version until the two projects merged.
 pub fn write_atomic(path: &Path, content: &str) -> io::Result<()> {
-    use std::io::Write as _;
-
-    let dir = path.parent().filter(|p| !p.as_os_str().is_empty());
-    let temp = match dir {
-        Some(dir) => dir.join(format!(
-            ".{}.tmp",
-            path.file_name().unwrap_or_default().to_string_lossy()
-        )),
-        None => Path::new(&format!(
-            ".{}.tmp",
-            path.file_name().unwrap_or_default().to_string_lossy()
-        ))
-        .to_path_buf(),
-    };
-    {
-        let mut file = fs::File::create(&temp)?;
-        file.write_all(content.as_bytes())?;
-        file.flush()?;
-        file.sync_all()?;
-    }
-    let mut last_err = None;
-    for attempt in 0..5 {
-        match fs::rename(&temp, path) {
-            Ok(()) => {
-                remove_orphan_temps(path);
-                return Ok(());
-            }
-            Err(e) => {
-                last_err = Some(e);
-                std::thread::sleep(Duration::from_millis(20 * (attempt + 1)));
-            }
-        }
-    }
-    let _ = fs::remove_file(&temp);
-    Err(last_err.unwrap_or_else(|| io::Error::other("rename failed")))
-}
-
-/// AR11 promises "at most an orphan `.tmp` cleaned by the next run".
-/// A crash or power cut between creating the temp file and renaming it
-/// leaves one behind; nothing else ever writes this pattern, so a
-/// successful write is the right moment to sweep them.
-fn remove_orphan_temps(path: &Path) {
-    let Some(dir) = path.parent().filter(|p| !p.as_os_str().is_empty()) else {
-        return;
-    };
-    let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
-        return;
-    };
-    let current = format!(".{name}.tmp");
-    let Ok(entries) = fs::read_dir(dir) else {
-        return;
-    };
-    for entry in entries.flatten() {
-        let Some(found) = entry.file_name().to_str().map(str::to_owned) else {
-            continue;
-        };
-        // Only our own leftovers: the exact name this destination uses.
-        if found == current {
-            let _ = fs::remove_file(entry.path());
-        }
-    }
+    crate::atomic::write(path, content).map_err(io::Error::other)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use bpt_core::parse::parse_line;
+    use std::fs;
 
     #[test]
     fn k12_markers_preserve_the_original_line() {
@@ -253,25 +197,6 @@ mod tests {
         );
         let text = terminal_display(&stuck, d, false, true).expect("stuck renders");
         assert!(text.contains("strategies alone reached 0/16"), "{text}");
-    }
-
-    /// AR11 promised orphan cleanup and nothing implemented it (found
-    /// by the phase 7 audit). Simulate the crash window by leaving a
-    /// temp file behind, then write normally: it must be gone.
-    #[test]
-    fn ar11_a_successful_write_sweeps_an_orphaned_temp() {
-        let dir = std::env::temp_dir().join("binsolve-orphan-test");
-        fs::create_dir_all(&dir).unwrap();
-        let path = dir.join("out.txt");
-        let orphan = dir.join(".out.txt.tmp");
-        fs::write(&orphan, "left behind by a crash").unwrap();
-        assert!(orphan.exists(), "the simulated orphan must exist first");
-
-        write_atomic(&path, "fresh\n").unwrap();
-
-        assert!(!orphan.exists(), "a successful write must sweep the orphan");
-        assert_eq!(fs::read_to_string(&path).unwrap(), "fresh\n");
-        fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]

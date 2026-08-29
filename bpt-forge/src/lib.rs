@@ -17,4 +17,5 @@ pub mod fill;
 pub mod geometry;
 pub mod grade;
 pub mod inspect;
+pub mod manifest;
 pub mod rng;
