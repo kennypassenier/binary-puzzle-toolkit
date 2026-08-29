@@ -47,9 +47,13 @@ pub fn carve(solution: &Grid, regions: &[Region], ceiling: Level, rng: &mut ChaC
         }
         working.set(row, col, Cell::Empty);
 
-        let candidate = Puzzle::custom(working.clone(), regions.to_vec());
+        // At L4 the ceiling cannot reject anything — every candidate is
+        // solvable by construction and L4 is the top of the scale — so
+        // the ladder is not run at all in the default case. Below L4 it
+        // decides, and it is the only thing that has to.
         let acceptable = still_unique_without(&working, regions, row, col, removed)
-            && fits_ceiling(&candidate, ceiling);
+            && (ceiling == Level::L4
+                || fits_ceiling(&Puzzle::custom(working.clone(), regions.to_vec()), ceiling));
         // A removal that costs uniqueness, or that pushes the puzzle past
         // the requested ceiling, is put back and never tried again.
         if !acceptable {
