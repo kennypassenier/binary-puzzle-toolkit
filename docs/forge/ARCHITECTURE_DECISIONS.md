@@ -188,7 +188,17 @@ partial-batch promise under that status.
 Files: `bf-<seed>-<index>-<level>.txt` — every file names what
 reproduces it. Exit codes: 0 all requested produced · 1 partial (level
 unreachable, budget exhausted, duplicates refused) · 2 usage / file /
-geometry error. Generated corpora live under binforge's own root and
+geometry error.
+
+**Amendment 2026-08-29 (L5, implementation).** "Level unreachable" can
+no longer occur: AR23 makes the ceiling an invariant of the carve loop,
+so a carve never returns a puzzle above the requested level and there is
+nothing to report short. The implemented exit-1 causes are duplicates
+refused, and budget exhausted once AR26's budget exists. The `--level`
+flag therefore behaves as a target in practice as well as a ceiling —
+measured over 40 seeds on a 10x10: ceiling L1 produced 40 L1 puzzles,
+L2 produced 40 L2, L3 produced 16 L3 and 24 L2, L4 produced 31 L4, 1 L3
+and 8 L2. Generated corpora live under binforge's own root and
 are **never** written into binsolve's `corpus/`: binsolve's calibration
 test derives site labels by parsing filename suffixes (a `…tier4.txt`
 would read as *easy*) and its threshold test loads every `.txt` there

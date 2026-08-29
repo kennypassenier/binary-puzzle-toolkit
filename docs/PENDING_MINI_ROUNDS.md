@@ -102,3 +102,31 @@ rely on the naive conversion · leave both as they are.
 
 This is a Phase-7 "reasoned vs measured" finding; the fix is a comment,
 not behaviour, so it is queued rather than applied mid-audit.
+
+## Q5 · Ctrl-C on a long batch needs a dependency decision
+
+**Area quarantined:** M26's cancellation half.
+↳ M26 = progress reporting and cancellation for `bpt forge`.
+
+**What is built.** Progress reporting is done: a terminal shows
+`forging <kind>: n/N (elapsed)` rewritten in place on stderr, and a
+piped run stays completely silent, which is the half M26 could deliver
+without a decision.
+
+**What is blocked.** Catching Ctrl-C to finish the current puzzle and
+write a `status: cancelled` batch (AR29b) needs a signal handler.
+Rust's standard library has none, so this needs either a dependency
+(`ctrlc`, a small and widely used crate) or a hand-written handler,
+which means `unsafe` and a Windows path of its own — against the crate's
+`#![forbid(unsafe_code)]`. Phase 1 answered "zelf bouwen" for every
+build-vs-buy question, so taking a dependency here is a deviation from a
+frozen decision and is not being built silently.
+
+**Also relevant:** AR26 says a responsive Ctrl-C is undeliverable
+anyway until the deterministic node budget exists (mini-round B4, which
+Kenny scheduled as "later"), because today the smallest interruptible
+unit is one whole `solve()` call.
+
+**Options:** take the `ctrlc` dependency · hand-write the handler and
+carve out an `unsafe` exception for the CLI crate · leave batches
+uninterruptible and drop M26's cancellation half.

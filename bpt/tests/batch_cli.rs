@@ -236,3 +236,35 @@ fn m26_a_piped_batch_carries_no_progress_noise() {
     );
     fs::remove_dir_all(&dir).ok();
 }
+
+#[test]
+fn ar29_a_failed_batch_leaves_nothing_behind() {
+    let dir = workdir("discarded");
+    // Learn the exact filenames this seed produces, then sabotage one of
+    // them: a directory where a file must go makes the rename fail for
+    // reasons no retry can fix.
+    let scout = workdir("discarded-scout");
+    assert_eq!(forge(&scout, &["--count", "5"]).status.code(), Some(0));
+    let victim = manifest(&scout).puzzles[3].file.clone();
+    fs::remove_dir_all(&scout).ok();
+
+    fs::create_dir_all(dir.join(&victim)).expect("sabotage in place");
+    let out = forge(&dir, &["--count", "5", "--force"]);
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "a batch that cannot be written must fail loudly"
+    );
+
+    let left: Vec<String> = fs::read_dir(&dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|name| *name != victim)
+        .collect();
+    assert!(
+        left.is_empty(),
+        "AR29: an error discards the batch, but these survived: {left:?}"
+    );
+    fs::remove_dir_all(&dir).ok();
+}

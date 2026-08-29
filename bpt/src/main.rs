@@ -419,18 +419,48 @@ fn forge_batch(args: &ForgeArgs, plan: &Plan, dir: &Path) -> Result<u8> {
         .with_context(|| format!("cannot create {} — check the path", dir.display()))?;
     atomic::clean_orphans(dir)?;
 
+    // AR29: a batch commits completely or not at all. A crash cannot
+    // clean up after itself — that is what writing the manifest last
+    // protects against — but an error can, and leaving a directory of
+    // puzzles with no manifest behind would look like a batch to
+    // everything except a reader that checks.
+    let written = match write_batch(args, plan, dir, &outcome, elapsed) {
+        Ok(written) => written,
+        Err(err) => {
+            discard_batch(dir, &outcome, plan);
+            return Err(err);
+        }
+    };
+
+    if std::io::stdout().is_terminal() {
+        println!(
+            "{} puzzle(s) in {} ({} ms)",
+            written.completed,
+            dir.display(),
+            written.elapsed_ms
+        );
+    }
+    report_shortfalls(&outcome);
+    Ok(exit_for(&outcome))
+}
+
+/// Write the whole batch: one corpus file per puzzle, the flat file the
+/// solver validates, then the manifest — in that order, each fsynced
+/// before the next depends on it (AR29).
+fn write_batch(
+    args: &ForgeArgs,
+    plan: &Plan,
+    dir: &Path,
+    outcome: &Outcome,
+    elapsed: std::time::Duration,
+) -> Result<forge_manifest::Manifest> {
     let tag = tag_for(&args.kind);
     let mut entries = Vec::new();
     let mut flat = String::new();
     for produced in &outcome.produced {
         let carved = &produced.carved;
         let line = format!("{tag}{}", carved.puzzle.to_line());
-        let name = format!(
-            "bf-{}-{}-{}.txt",
-            plan.seed,
-            produced.index,
-            carved.level.name()
-        );
+        let name = batch_file_name(plan.seed, produced.index, carved.level);
         // The corpus files are two-line so `--check` can verify them;
         // the flat file is one-line so `--unique` can prove them (AR27).
         atomic::write(
@@ -478,16 +508,28 @@ fn forge_batch(args: &ForgeArgs, plan: &Plan, dir: &Path) -> Result<u8> {
     )?;
     atomic::sync_dir(dir)?;
 
-    if std::io::stdout().is_terminal() {
-        println!(
-            "{} puzzle(s) in {} ({} ms)",
-            manifest.completed,
-            dir.display(),
-            manifest.elapsed_ms
-        );
+    Ok(manifest)
+}
+
+/// Undo a failed batch. Only the files this run would have written are
+/// removed, by name, so a `--force` run that fails cannot take the
+/// existing batch down with it.
+fn discard_batch(dir: &Path, outcome: &Outcome, plan: &Plan) {
+    for produced in &outcome.produced {
+        let name = batch_file_name(plan.seed, produced.index, produced.carved.level);
+        let _ = fs::remove_file(dir.join(name));
     }
-    report_shortfalls(&outcome);
-    Ok(exit_for(&outcome))
+    let _ = atomic::clean_orphans(dir);
+    // The flat file and the manifest describe this run only, so they go
+    // whether or not this run created them: a stale pair left next to a
+    // half-removed batch is worse than none.
+    let _ = fs::remove_file(dir.join(FLAT_FILE));
+    let _ = fs::remove_file(dir.join(MANIFEST_FILE));
+}
+
+/// AR30: every file names what reproduces it.
+fn batch_file_name(seed: u64, index: u64, level: Level) -> String {
+    format!("bf-{seed}-{index}-{}.txt", level.name())
 }
 
 /// Read back the puzzle lines already in a directory, so a `--force` run

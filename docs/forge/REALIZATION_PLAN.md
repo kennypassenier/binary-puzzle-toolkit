@@ -11,9 +11,9 @@ AFK mode off). Enforcement was installed before L0 per the procedure.
 | L0 · Walking skeleton, CI green | [meta] | **done** (signed off 2026-08-12) |
 | L1 · Geometry model + inspect | K23, M25, AR22b, AR32.4, AR32.5 | **built + reviewed, gate pending (AFK)** |
 | L2 · solver changes B1–B3 | AR21, AR22b | **done** (2026-08-28, dissolved by the merge: rectangular regions, choice oracle, custom geometries) |
-| L3 · Random solution filler | K20, M20, AR21, AR28, AR32.1 | **done** (2026-08-28, seeded streams + reservoir cell choice) |
+| L3 · Random solution filler | K20, M20, AR21, AR28, AR32.1 | **done** (2026-08-28; cell choice replaced 2026-08-29 — uniform sampling was pathological on the composites, see K27's commit) |
 | L4 · Carve loop + grading + targeting | K21, K24, K25, AR23, AR31 | **done** (2026-08-28, tier-ceiling carve, verified through the solver) |
-| L5 · Output, batches, CLI | K26, K27, K29, M21, M23, M26, AR27, AR29, AR30 | **partly done**: `bpt forge` writes puzzles and solutions; batches, manifests and progress reporting still open |
+| L5 · Output, batches, CLI | K26, K27, K29, M21, M23, M26, AR27, AR29, AR30 | **done except cancellation** (2026-08-29): `--out-dir` writes corpus files, the flat validation file and a manifest; duplicates refused, shortfalls reported, failed batches discarded, progress on a terminal only. M26's Ctrl-C needs a signal-handling dependency — queued as Q5 |
 | L6 · Independent validation harness + restore drill | K31, D1, M30, AR27, B5 | not started |
 | L7 · Parallelism, benchmarks, baselines | M22, K30, AR25, B4 | not started |
 | L8 · Invented types + property testing | K28, D4, M28, M24 | not started |
