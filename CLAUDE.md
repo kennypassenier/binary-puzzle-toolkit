@@ -13,9 +13,9 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 
 | Field | Value |
 |---|---|
-| Current phase | 9 — release prepared, not tagged. Phases 0-8 complete for both halves |
-| Last completed gate | phase 8, all six documents approved (2026-08-30) |
-| Next gate | phase 9: the release report, ending in "tag & release?" |
+| Current phase | 9 — report signed off 2026-08-30, tagging v1.0.0 once CI is green on the tagged commit |
+| Last completed gate | phase 9 release report, all six items signed (2026-08-30); Kenny chose tag + draft + Claude publishes |
+| Next gate | phase 10: the retrospective |
 | AFK mode | OFF since 2026-08-29 — the queue was presented and cleared |
 
 <!-- Update this block after every completed gate. -->
