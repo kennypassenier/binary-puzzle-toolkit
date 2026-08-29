@@ -13,7 +13,7 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 
 | Field | Value |
 |---|---|
-| Current phase | solver half: 9 (release prepared, not tagged); generator half: 6 (L1-L8 built) |
+| Current phase | solver half: 9 (release prepared, not tagged); generator half: 6 complete (L0-L8 built, CI green) |
 | Last completed gate | merge decisions + phase 2 mandatory items (2026-08-28) |
 | Next gate | combined report: the merge and the generator's L2-L8, plus mini-rounds Q5-Q7 |
 | AFK mode | ON since 2026-08-28 — gates accumulate, deviations queue as mini-rounds |
@@ -27,7 +27,7 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 | `bpt-core` | grid, regions, rules, the text format, strategies, search — zero runtime dependencies |
 | `bpt-forge` | geometry, fill, carve, grading: the generator |
 | `bpt-tui` | the replay viewer's render model |
-| `bpt` | one binary: `bpt solve`, `bpt forge`, `bpt watch` |
+| `bpt` | one binary: `bpt solve`, `bpt forge`, `bpt watch`, `bpt inspect` |
 
 ## Project documents
 
