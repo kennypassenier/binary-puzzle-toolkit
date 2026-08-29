@@ -13,7 +13,7 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 
 | Field | Value |
 |---|---|
-| Current phase | 9 — report signed off 2026-08-30, tagging v1.0.0 once CI is green on the tagged commit |
+| Current phase | 9 done — v1.0.0 released 2026-08-30 from commit 62f971b. Next: 10, the retrospective |
 | Last completed gate | phase 9 release report, all six items signed (2026-08-30); Kenny chose tag + draft + Claude publishes |
 | Next gate | phase 10: the retrospective |
 | AFK mode | OFF since 2026-08-29 — the queue was presented and cleared |

@@ -4,7 +4,7 @@ All notable changes to BinaryPuzzleToolkit are documented here. The format follo
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions
 follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] — unreleased
+## [1.0.0] — 2026-08-30
 
 First release. One toolkit that solves binary puzzles and generates
 them, merged on 2026-08-28 from two projects designed for each other:
