@@ -4,7 +4,7 @@ What is tested, where, and — just as important — what is deliberately
 not. Written at the Phase 7 gate on 2026-08-29 and kept current with the
 suites it describes.
 
-This file covers the whole toolkit. `docs/solve/TEST_PLAN.md` is the
+This file covers the whole toolkit. `docs/legacy/TEST_PLAN.md` is the
 solver half's own plan from before the merge and is kept for its
 history; where the two disagree, this one is current.
 

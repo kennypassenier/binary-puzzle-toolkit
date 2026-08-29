@@ -78,13 +78,16 @@ struct InspectArgs {
 
 #[derive(Parser, Debug)]
 struct ForgeArgs {
-    /// Puzzle type: a size like 8 for a plain n×n, or a tag such as
-    /// 4x6x6, 4x8x8, 9x6x6, 8in14, 6in10in14
+    /// Puzzle type. A size like 8 for a plain n×n; one of 4x6x6, 4x8x8,
+    /// 9x6x6, 8in14, 6in10in14; or a composed name that describes its
+    /// own layout, such as 4x6x6in16 — <n>x<a>x<a> is n blocks of a×a,
+    /// <term>in<size> centres that term in a larger square
     #[arg(long, default_value = "8")]
     kind: String,
 
-    /// Generate an invented type from a geometry file (K23/K28) instead
-    /// of a built-in one
+    /// Generate from a geometry file instead of a named type. Needed
+    /// only for layouts a name cannot describe, such as regions that
+    /// overlap or sit side by side
     #[arg(long, value_name = "FILE", conflicts_with = "kind")]
     geometry: Option<PathBuf>,
 
@@ -183,8 +186,8 @@ struct SolveArgs {
     #[arg(long)]
     check: bool,
 
-    /// Read the regions from a geometry file, for a type that has no tag
-    /// in the line format yet (K28)
+    /// Read the regions from a geometry file, for a puzzle whose type
+    /// has no name the line format can carry
     #[arg(long, value_name = "FILE")]
     geometry: Option<PathBuf>,
 }

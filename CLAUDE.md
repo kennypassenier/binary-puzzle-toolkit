@@ -35,7 +35,9 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 |---|---|
 | docs/ID_MAP.md | how the generator's feature IDs were renumbered at the merge |
 | docs/MERGE_PLAN.md | the merge decisions and the order of work |
-| docs/solve/ | the solver half's phase documents and its user documentation |
+| docs/USER_GUIDE.md, DEBUGGING_GUIDE.md, OPERATIONS_RUNBOOK.md, ARCHITECTURE_REFERENCE.md, TEST_PLAN.md | the current user documentation, covering both halves |
+| docs/solve/ | the solver half's phase documents (scope, features, decisions, plan) |
+| docs/legacy/ | the solver's pre-merge user docs, superseded but kept |
 | docs/forge/ | the generator half's phase documents |
 | docs/DEVELOPMENT.md | working on the code; the one-time hook activation |
 | docs/TEST_PLAN.md | every suite, and what is deliberately not covered |

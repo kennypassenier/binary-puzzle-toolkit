@@ -236,7 +236,7 @@ of the current step is highlighted.
 - **Windows is build-verified, not runtime-verified.** CI compiles and
   tests binsolve on Windows every push, but nobody has driven the
   binaries on a real Windows desktop yet. See
-  [WINDOWS_TEST_CHECKLIST.md](WINDOWS_TEST_CHECKLIST.md).
+  [WINDOWS_TEST_CHECKLIST.md](../solve/WINDOWS_TEST_CHECKLIST.md).
 - **binsolve never touches the network.** Puzzles come from arguments or
   files, results go to the screen or a file. There are no credentials and
   no telemetry.

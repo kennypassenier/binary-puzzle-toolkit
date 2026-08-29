@@ -8,12 +8,19 @@ binarypuzzle.com, and a uniqueness proof for each solution — and it
 Merged on 2026-08-28 from two projects that were designed for each
 other: the solver (binsolve) and the generator (binforge).
 
-Status: **in development.** The solving half is built, tested,
-hardened and documented; the generating half has its model and geometry
-in place and its generation pipeline still to build. There is no published binary
-yet — build from source. Windows is build-verified (CI compiles and
-runs the suite there) but not yet runtime-verified on real hardware:
-see [docs/solve/WINDOWS_TEST_CHECKLIST.md](docs/solve/WINDOWS_TEST_CHECKLIST.md).
+Status: **both halves are built, tested and hardened.** Solving and
+generating are complete, including invented composite types, batches
+with a manifest that can rebuild them, and independent validation of
+every generated puzzle through the solver. There is no published binary
+yet — build from source.
+
+Windows is **build-verified, not runtime-verified**: CI compiles and
+runs the whole suite there, and it has caught real failures, but nobody
+has started the toolkit on a real Windows machine. By the project's own
+rule that is beta until
+[the checklist](docs/solve/WINDOWS_TEST_CHECKLIST.md) is signed.
+[docs/TEST_PLAN.md](docs/TEST_PLAN.md) lists what else is deliberately
+not covered.
 
 ## Build and run
 
@@ -33,7 +40,25 @@ bpt solve --check --file puzzle.txt    # verify a puzzle+solution file
 ```
 
 Special types carry a tag: `4x6x6`, `4x8x8`, `9x6x6`, `8in14`,
-`6in10in14` — for example `4x8x8:110..0.1…`.
+`6in10in14` — for example `4x8x8:110..0.1…`. A tag describes its own
+layout, so a type nobody has generated before works the moment you name
+it: `4x6x6in16` is four 6x6 blocks forming a 12x12, centred in a 16x16.
+
+Generate puzzles, each proven to have exactly one solution:
+
+```
+bpt forge --kind 10 --count 5                   # five 10x10 puzzles
+bpt forge --kind 4x6x6in16 --level L2 --count 3 # an invented type
+bpt forge --kind 12 --count 100 --out-dir corpus/generated
+```
+
+A batch writes one file per puzzle, a flat file the solver can validate
+in one run, and a manifest that records the three numbers rebuilding
+each puzzle. Inspect any layout before generating from it:
+
+```
+bpt inspect 4x6x6in16
+```
 
 Watch a puzzle being solved step by step:
 
@@ -59,12 +84,16 @@ setup, the quality gates and how to run the fuzzers.
 
 | Document | For |
 |---|---|
-| [docs/solve/USER_GUIDE.md](docs/solve/USER_GUIDE.md) | every command and flag, with worked examples |
-| [docs/solve/OPERATIONS_RUNBOOK.md](docs/solve/OPERATIONS_RUNBOOK.md) | numbered procedures: batches, verification, fuzzing, recovery |
-| [docs/solve/DEBUGGING_GUIDE.md](docs/solve/DEBUGGING_GUIDE.md) | symptom → cause → remedy for every error message |
-| [docs/solve/ARCHITECTURE_REFERENCE.md](docs/solve/ARCHITECTURE_REFERENCE.md) | how the solver works, as built |
-| [docs/solve/TEST_PLAN.md](docs/solve/TEST_PLAN.md) | what is proven where, and what is deliberately not |
+| [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | every command and flag, with worked examples |
+| [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md) | numbered procedures: install, update, generate, restore, release |
+| [docs/DEBUGGING_GUIDE.md](docs/DEBUGGING_GUIDE.md) | the evidence a run leaves, and symptom → cause |
+| [docs/ARCHITECTURE_REFERENCE.md](docs/ARCHITECTURE_REFERENCE.md) | how the toolkit works, as built |
+| [docs/TEST_PLAN.md](docs/TEST_PLAN.md) | what is proven where, and what is deliberately not |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | working on the code; the one-time hook activation |
+
+The solver half's own documents from before the merge are kept in
+[docs/legacy/](docs/legacy/); where they disagree with the documents
+above, the ones above are current.
 
 ## License
 
