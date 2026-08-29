@@ -10,3 +10,5 @@ bpt-core = { path = "../bpt-core" }
 bpt-forge = { path = "../bpt-forge" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
+rayon = "1"
+ctrlc = "3"

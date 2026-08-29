@@ -4,6 +4,7 @@
 
 mod atomic;
 mod output;
+mod parallel;
 
 use anyhow::{Context, Result, bail};
 use bpt_core::event::{EventLog, NullObserver, Observer, format_trace};
@@ -30,7 +31,11 @@ const EXIT_USAGE: u8 = 2;
 /// Names inside a batch directory. Fixed rather than configurable: the
 /// validation harness and `bpt solve --file` both look for them.
 const FLAT_FILE: &str = "puzzles.txt";
-const MANIFEST_FILE: &str = "manifest.toml";
+const MANIFEST_FILE: &str = "manifest.json";
+
+/// AR29b: a cancelled batch is complete and valid but shorter than
+/// asked for, which no consumer may mistake for a finished run.
+const EXIT_CANCELLED: u8 = 3;
 
 /// B5: the release number alone cannot identify a build, and the batch
 /// manifests record this exact string.
@@ -352,7 +357,12 @@ fn check_geometry(outcome: &Outcome, kind: &str) -> Result<()> {
 
 /// `--out` / stdout: one line per puzzle, exactly binsolve's format.
 fn forge_stream(args: &ForgeArgs, plan: &Plan) -> Result<u8> {
-    let outcome = batch::run(plan, &mut HashSet::new());
+    let outcome = batch::run_from(
+        plan,
+        &mut HashSet::new(),
+        &mut parallel::OnAllCores,
+        &mut |_, _| {},
+    );
     check_geometry(&outcome, &args.kind)?;
 
     let tag = tag_for(&args.kind);
@@ -404,15 +414,35 @@ fn forge_batch(args: &ForgeArgs, plan: &Plan, dir: &Path) -> Result<u8> {
     // rewritten in place so a 4000-puzzle run leaves one line, not 4000.
     let show_progress = std::io::stderr().is_terminal();
     let kind = args.kind.clone();
-    let outcome = batch::run_with(plan, &mut seen, &mut |done, total| {
-        if show_progress {
-            eprint!(
-                "\rforging {kind}: {done}/{total} ({:.1}s)   ",
-                started.elapsed().as_secs_f64()
-            );
-            std::io::stderr().flush().ok();
+    // M26/AR29b: Ctrl-C finishes the puzzle in flight and writes what is
+    // done. A second Ctrl-C is left to the default handler, so a run that
+    // will not stop can still be killed.
+    let cancelled = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let flag = std::sync::Arc::clone(&cancelled);
+    let installed = ctrlc::set_handler(move || {
+        if flag.swap(true, std::sync::atomic::Ordering::SeqCst) {
+            std::process::exit(EXIT_CANCELLED.into());
         }
-    });
+        eprintln!(
+            "\nbpt forge: cancelling — finishing the current puzzle, press Ctrl-C again to abort"
+        );
+    })
+    .is_ok();
+    let outcome = batch::run_until(
+        plan,
+        &mut seen,
+        &mut parallel::OnAllCores,
+        &mut |done, total| {
+            if show_progress {
+                eprint!(
+                    "\rforging {kind}: {done}/{total} ({:.1}s)   ",
+                    started.elapsed().as_secs_f64()
+                );
+                std::io::stderr().flush().ok();
+            }
+        },
+        &|| installed && cancelled.load(std::sync::atomic::Ordering::SeqCst),
+    );
     if show_progress {
         eprintln!();
     }
@@ -499,6 +529,8 @@ fn write_batch(
         completed: outcome.produced.len() as u64,
         status: if outcome.complete() {
             forge_manifest::Status::Complete
+        } else if outcome.cancelled() {
+            forge_manifest::Status::Cancelled
         } else {
             forge_manifest::Status::Partial
         },
@@ -508,7 +540,7 @@ fn write_batch(
     };
     atomic::write(
         &dir.join(MANIFEST_FILE),
-        &manifest.to_toml().context("cannot render the manifest")?,
+        &manifest.to_json().context("cannot render the manifest")?,
     )?;
     atomic::sync_dir(dir)?;
 
@@ -561,6 +593,9 @@ fn describe(shortfall: &Shortfall) -> String {
         Shortfall::OnlyDuplicates { index } => {
             format!("puzzle {index}: every attempt reproduced a puzzle already generated")
         }
+        Shortfall::Cancelled { after } => {
+            format!("cancelled after {after} of the requested puzzles")
+        }
     }
 }
 
@@ -574,6 +609,8 @@ fn report_shortfalls(outcome: &Outcome) {
 fn exit_for(outcome: &Outcome) -> u8 {
     if outcome.complete() {
         EXIT_OK
+    } else if outcome.cancelled() {
+        EXIT_CANCELLED
     } else {
         EXIT_SOME_FAILED
     }

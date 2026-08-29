@@ -83,15 +83,16 @@ pub fn digest(line: &str) -> String {
 }
 
 impl Manifest {
-    /// Render as TOML. The manifest is written last and read by both the
-    /// validation harness and a human staring at a failed batch, so it
-    /// is a text format rather than a binary one.
-    pub fn to_toml(&self) -> Result<String, toml::ser::Error> {
-        toml::to_string_pretty(self)
+    /// Render as JSON (T6). Program-written and `jq`-greppable, which is
+    /// what the validation harness and anyone debugging a batch reach
+    /// for; the geometry files are TOML because those are hand-edited,
+    /// and this one never is.
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(self)
     }
 
-    pub fn from_toml(text: &str) -> Result<Self, toml::de::Error> {
-        toml::from_str(text)
+    pub fn from_json(text: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(text)
     }
 }
 
@@ -125,9 +126,9 @@ mod tests {
     }
 
     #[test]
-    fn m23_a_manifest_round_trips_through_toml() {
-        let text = sample().to_toml().expect("serializes");
-        let back = Manifest::from_toml(&text).expect("parses back");
+    fn m23_a_manifest_round_trips_through_json() {
+        let text = sample().to_json().expect("serializes");
+        let back = Manifest::from_json(&text).expect("parses back");
         assert_eq!(back.seed, 7);
         assert_eq!(back.status, Status::Complete);
         assert_eq!(back.puzzles[0].file, "bf-7-0-L2.txt");
@@ -145,7 +146,7 @@ mod tests {
 
     #[test]
     fn m23_status_reads_as_a_plain_word() {
-        let text = sample().to_toml().unwrap();
-        assert!(text.contains("status = \"complete\""), "{text}");
+        let text = sample().to_json().unwrap();
+        assert!(text.contains("\"status\": \"complete\""), "{text}");
     }
 }

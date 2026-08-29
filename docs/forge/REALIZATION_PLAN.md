@@ -13,9 +13,9 @@ AFK mode off). Enforcement was installed before L0 per the procedure.
 | L2 · solver changes B1–B3 | AR21, AR22b | **done** (2026-08-28, dissolved by the merge: rectangular regions, choice oracle, custom geometries) |
 | L3 · Random solution filler | K20, M20, AR21, AR28, AR32.1 | **done** (2026-08-28; cell choice replaced 2026-08-29 — uniform sampling was pathological on the composites, see K27's commit) |
 | L4 · Carve loop + grading + targeting | K21, K24, K25, AR23, AR31 | **done** (2026-08-28, tier-ceiling carve, verified through the solver) |
-| L5 · Output, batches, CLI | K26, K27, K29, M21, M23, M26, AR27, AR29, AR30 | **done except cancellation** (2026-08-29): `--out-dir` writes corpus files, the flat validation file and a manifest; duplicates refused, shortfalls reported, failed batches discarded, progress on a terminal only. M26's Ctrl-C needs a signal-handling dependency — queued as Q5 |
-| L6 · Independent validation harness + restore drill | K31, D1, M30, AR27, B5 | not started |
-| L7 · Parallelism, benchmarks, baselines | M22, K30, AR25, B4 | not started |
+| L5 · Output, batches, CLI | K26, K27, K29, M21, M23, M26, AR27, AR29, AR30 | **done** (2026-08-29): `--out-dir` writes corpus files, the flat validation file and a JSON manifest; duplicates refused, shortfalls reported, failed batches discarded, progress on a terminal only, Ctrl-C writes a `cancelled` batch and exits 3 |
+| L6 · Independent validation harness + restore drill | K31, D1, M30, AR27, B5 | **built, D1's full sweep open**: every geometry validates through the real binary, the sabotage test catches an ambiguous puzzle, the restore drill runs from a fresh clone in CI, B5 stamps the revision. D1's 100-per-geometry sweep exists as an ignored test — whether CI can afford it depends on the carve cost above 14x14 |
+| L7 · Parallelism, benchmarks, baselines | M22, K30, AR25, B4 | **partly done**: M22 built — the CLI generates on all cores and produces byte-identical batches to a single-threaded run (16x16, 8 puzzles: 25.8 s on one core, 8.2 s on sixteen). K30's benchmarks and AR25's baseline file still open; B4 remains Kenny's "later" |
 | L8 · Invented types + property testing | K28, D4, M28, M24 | not started |
 
 Remaining after L8: K22 (the five special types) is covered

@@ -28,8 +28,8 @@ fn forge(dir: &Path, extra: &[&str]) -> Output {
 }
 
 fn manifest(dir: &Path) -> bpt_forge::manifest::Manifest {
-    let text = fs::read_to_string(dir.join("manifest.toml")).expect("manifest exists");
-    bpt_forge::manifest::Manifest::from_toml(&text).expect("manifest parses")
+    let text = fs::read_to_string(dir.join("manifest.json")).expect("manifest exists");
+    bpt_forge::manifest::Manifest::from_json(&text).expect("manifest parses")
 }
 
 #[test]
@@ -265,6 +265,110 @@ fn ar29_a_failed_batch_leaves_nothing_behind() {
     assert!(
         left.is_empty(),
         "AR29: an error discards the batch, but these survived: {left:?}"
+    );
+    fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn m22_a_parallel_batch_equals_a_sequential_one() {
+    // The CLI generates on all cores; the library's own sequential path
+    // is the reference. Same seed must mean the same puzzles, in the
+    // same order, whichever produced them.
+    let dir = workdir("parallel");
+    assert_eq!(forge(&dir, &["--count", "24"]).status.code(), Some(0));
+
+    let plan = bpt_forge::batch::Plan::new(
+        6,
+        vec![bpt_core::region::Region::square(0, 0, 6)],
+        bpt_forge::grade::Level::L4,
+        4242,
+        24,
+    );
+    let reference = bpt_forge::batch::run(&plan, &mut std::collections::HashSet::new());
+    let sequential: Vec<String> = reference
+        .produced
+        .iter()
+        .map(|p| format!("{}\n", p.carved.puzzle.to_line()))
+        .collect();
+    assert_eq!(
+        fs::read_to_string(dir.join("puzzles.txt")).unwrap(),
+        sequential.concat()
+    );
+
+    // The recorded triples must match too, or a manifest from a parallel
+    // run would not restore under a sequential one.
+    let manifest = manifest(&dir);
+    for (entry, produced) in manifest.puzzles.iter().zip(&reference.produced) {
+        assert_eq!(entry.index, produced.index);
+        assert_eq!(entry.attempt, produced.attempt);
+    }
+    fs::remove_dir_all(&dir).ok();
+}
+
+/// AR29b: Ctrl-C writes what is finished, with a status no consumer can
+/// mistake for a complete batch. Unix-only because the test has to send
+/// the signal itself.
+#[cfg(unix)]
+#[test]
+fn m26_a_cancelled_batch_is_valid_and_says_so() {
+    use std::process::Stdio;
+
+    let dir = workdir("cancelled");
+    // A cheap geometry with a long queue: the run is still going when
+    // the signal arrives, and the chunk in flight finishes quickly, so
+    // the test costs seconds rather than minutes. A large grid would
+    // test the same thing and make the suite unusable.
+    let child = bpt()
+        .args(["forge", "--out-dir"])
+        .arg(&dir)
+        .args(["--kind", "10", "--count", "3000", "--seed", "8"])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("bpt starts");
+
+    std::thread::sleep(std::time::Duration::from_secs(2));
+    let killed = std::process::Command::new("kill")
+        .args(["-INT", &child.id().to_string()])
+        .status()
+        .expect("kill runs");
+    assert!(killed.success(), "could not signal the run");
+
+    let out = child.wait_with_output().expect("bpt finishes");
+    assert_eq!(
+        out.status.code(),
+        Some(3),
+        "a cancelled batch has its own exit code: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+
+    let manifest = manifest(&dir);
+    assert_eq!(manifest.status, bpt_forge::manifest::Status::Cancelled);
+    assert!(
+        manifest.completed < manifest.requested,
+        "a cancelled batch is shorter than what was asked for"
+    );
+    assert_eq!(manifest.completed as usize, manifest.puzzles.len());
+
+    // What landed is complete and valid, which is the whole promise.
+    for entry in &manifest.puzzles {
+        let body = fs::read_to_string(dir.join(&entry.file)).expect("a finished file");
+        assert!(body.lines().count() == 2, "{} is torn", entry.file);
+        assert_eq!(
+            entry.digest,
+            bpt_forge::manifest::digest(body.lines().next().unwrap())
+        );
+    }
+    let validated = bpt()
+        .args(["solve", "--file"])
+        .arg(dir.join("puzzles.txt"))
+        .arg("--unique")
+        .output()
+        .expect("bpt runs");
+    assert_eq!(
+        validated.status.code(),
+        Some(0),
+        "the partial batch must still validate"
     );
     fs::remove_dir_all(&dir).ok();
 }

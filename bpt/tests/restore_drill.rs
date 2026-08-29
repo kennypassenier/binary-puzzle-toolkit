@@ -25,8 +25,8 @@ fn fixture_dir() -> PathBuf {
 }
 
 fn load(dir: &Path) -> Manifest {
-    let text = fs::read_to_string(dir.join("manifest.toml")).expect("the fixture manifest");
-    Manifest::from_toml(&text).expect("the fixture manifest parses")
+    let text = fs::read_to_string(dir.join("manifest.json")).expect("the fixture manifest");
+    Manifest::from_json(&text).expect("the fixture manifest parses")
 }
 
 /// Rebuild the plan the manifest describes. Everything needed is in the
