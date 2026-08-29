@@ -9,9 +9,10 @@ mod parallel;
 use anyhow::{Context, Result, bail};
 use bpt_core::event::{EventLog, NullObserver, Observer, format_trace};
 use bpt_core::parse::{parse_corpus_file, parse_line};
-use bpt_core::region::{PuzzleKind, Region, validate_givens, validate_solution};
+use bpt_core::region::{Puzzle, PuzzleKind, Region, validate_givens, validate_solution};
 use bpt_core::search::{SolveMode, SolveOutcome, solve};
 use bpt_forge::batch::{self, Outcome, Plan, Shortfall};
+use bpt_forge::carve::Symmetry;
 use bpt_forge::grade::Level;
 use bpt_forge::manifest as forge_manifest;
 use clap::Parser;
@@ -70,6 +71,11 @@ struct ForgeArgs {
     #[arg(long, default_value = "8")]
     kind: String,
 
+    /// Generate an invented type from a geometry file (K23/K28) instead
+    /// of a built-in one
+    #[arg(long, value_name = "FILE", conflicts_with = "kind")]
+    geometry: Option<PathBuf>,
+
     /// How many puzzles to generate
     #[arg(long, default_value_t = 1)]
     count: u64,
@@ -99,6 +105,16 @@ struct ForgeArgs {
     /// a run refuses, because a batch owns its directory (AR29)
     #[arg(long, requires = "out_dir")]
     force: bool,
+
+    /// Stop carving once this many clues remain, instead of removing as
+    /// much as the level allows (M24)
+    #[arg(long, value_name = "N")]
+    clues: Option<usize>,
+
+    /// Lay the clues out symmetrically: none, rotational (a half turn)
+    /// or mirror (left to right). Symmetry costs clues and time (M24)
+    #[arg(long, default_value = "none")]
+    symmetry: String,
 }
 
 /// Watching is delegated to the replay viewer, which owns its own
@@ -154,6 +170,11 @@ struct SolveArgs {
     /// Verify puzzle+solution files instead of solving them (M3)
     #[arg(long)]
     check: bool,
+
+    /// Read the regions from a geometry file, for a type that has no tag
+    /// in the line format yet (K28)
+    #[arg(long, value_name = "FILE")]
+    geometry: Option<PathBuf>,
 }
 
 fn main() -> ExitCode {
@@ -207,6 +228,14 @@ fn run(args: SolveArgs) -> Result<u8> {
         return run_check(&args);
     }
 
+    let supplied_regions = match &args.geometry {
+        Some(path) => {
+            let geometry = read_geometry(path)?;
+            Some((geometry.size, geometry.to_regions()))
+        }
+        None => None,
+    };
+
     let inputs: Vec<String> = match (&args.puzzle, &args.file) {
         (Some(p), _) => vec![p.clone()],
         (_, Some(path)) => std::fs::read_to_string(path)
@@ -255,6 +284,31 @@ fn run(args: SolveArgs) -> Result<u8> {
                 }
                 continue;
             }
+        };
+        // A geometry file replaces the regions the tag implied. It is
+        // the only way to solve a type the line format has no tag for.
+        //
+        // A geometry that does not fit the grid is refused here rather
+        // than allowed through: its regions would index past the end of
+        // the grid, which is a panic, not a wrong answer.
+        let puzzle = match &supplied_regions {
+            Some((size, regions)) => {
+                if puzzle.givens.size() != *size {
+                    failures += 1;
+                    lines.push(marker_line("invalid", original));
+                    if args.explain.is_some() {
+                        traces.push_str(&format!(
+                            "{original}: the geometry describes a {size}x{size} grid, \
+                             this puzzle is {}x{}\n",
+                            puzzle.givens.size(),
+                            puzzle.givens.size()
+                        ));
+                    }
+                    continue;
+                }
+                Puzzle::custom(puzzle.givens.clone(), regions.clone())
+            }
+            None => puzzle,
         };
         let mut log = EventLog::default();
         let mut null = NullObserver;
@@ -319,13 +373,39 @@ fn run(args: SolveArgs) -> Result<u8> {
 /// uniqueness proof after each removed clue, so what comes out has
 /// exactly one solution — the same guarantee a published puzzle carries.
 fn run_forge(args: ForgeArgs) -> Result<u8> {
-    let (n, regions) = geometry_for(&args.kind)?;
+    let (n, regions) = match &args.geometry {
+        Some(path) => {
+            let geometry = read_geometry(path)?;
+            (geometry.size, geometry.to_regions())
+        }
+        None => geometry_for(&args.kind)?,
+    };
     let ceiling = level_for(&args.level)?;
-    let plan = Plan::new(n, regions, ceiling, args.seed, args.count);
+    let mut plan = Plan::new(n, regions, ceiling, args.seed, args.count);
+    plan.symmetry = symmetry_for(&args.symmetry)?;
+    plan.target_clues = args.clues;
+    if let Some(target) = args.clues {
+        let cells = n * n;
+        if target >= cells {
+            bail!(
+                "a {n}x{n} grid has {cells} cells — asking to keep {target} clues would leave \
+                 the solution, not a puzzle"
+            );
+        }
+    }
 
     match &args.out_dir {
         Some(dir) => forge_batch(&args, &plan, dir),
         None => forge_stream(&args, &plan),
+    }
+}
+
+fn symmetry_for(name: &str) -> Result<Symmetry> {
+    match name.to_lowercase().as_str() {
+        "none" => Ok(Symmetry::None),
+        "rotational" => Ok(Symmetry::Rotational),
+        "mirror" => Ok(Symmetry::Mirror),
+        other => bail!("unknown symmetry {other:?} — use none, rotational or mirror"),
     }
 }
 
@@ -365,7 +445,7 @@ fn forge_stream(args: &ForgeArgs, plan: &Plan) -> Result<u8> {
     );
     check_geometry(&outcome, &args.kind)?;
 
-    let tag = tag_for(&args.kind);
+    let tag = emitted_tag(args);
     let mut lines = Vec::new();
     for produced in &outcome.produced {
         lines.push(format!("{tag}{}", produced.carved.puzzle.to_line()));
@@ -384,6 +464,7 @@ fn forge_stream(args: &ForgeArgs, plan: &Plan) -> Result<u8> {
         }
     }
     report_shortfalls(&outcome);
+    report_clue_target(&outcome, plan.target_clues);
     Ok(exit_for(&outcome))
 }
 
@@ -475,6 +556,7 @@ fn forge_batch(args: &ForgeArgs, plan: &Plan, dir: &Path) -> Result<u8> {
         );
     }
     report_shortfalls(&outcome);
+    report_clue_target(&outcome, plan.target_clues);
     Ok(exit_for(&outcome))
 }
 
@@ -488,7 +570,7 @@ fn write_batch(
     outcome: &Outcome,
     elapsed: std::time::Duration,
 ) -> Result<forge_manifest::Manifest> {
-    let tag = tag_for(&args.kind);
+    let tag = emitted_tag(args);
     let mut entries = Vec::new();
     let mut flat = String::new();
     for produced in &outcome.produced {
@@ -606,6 +688,31 @@ fn report_shortfalls(outcome: &Outcome) {
     }
 }
 
+/// M24: a clue target that could not be met is reported, never silently
+/// missed. It is not a shortfall of the batch — every puzzle in it is
+/// valid — so it does not change the exit code.
+fn report_clue_target(outcome: &Outcome, target: Option<usize>) {
+    let Some(target) = target else { return };
+    let missed = outcome
+        .produced
+        .iter()
+        .filter(|p| p.carved.clues > target)
+        .count();
+    if missed > 0 {
+        let worst = outcome
+            .produced
+            .iter()
+            .map(|p| p.carved.clues)
+            .max()
+            .unwrap_or(target);
+        eprintln!(
+            "bpt forge: {missed} of {} puzzles could not reach {target} clues \
+             (uniqueness stopped the carve; the heaviest kept {worst})",
+            outcome.produced.len()
+        );
+    }
+}
+
 fn exit_for(outcome: &Outcome) -> u8 {
     if outcome.complete() {
         EXIT_OK
@@ -633,6 +740,32 @@ fn geometry_for(kind: &str) -> Result<(usize, Vec<Region>)> {
         )
     })?;
     Ok((puzzle_kind.grid_size(), puzzle_kind.regions()))
+}
+
+/// The prefix a generated line carries.
+///
+/// An invented type emits **no** tag, deliberately. The reader resolves
+/// a tag through the built-in vocabulary, so emitting `4x10x10:` would
+/// produce lines that only a future version could read, and a puzzle
+/// file that fails to parse is worse than one that needs its geometry
+/// passed alongside. Extending the vocabulary is a decision on the
+/// frozen tag format (K28's tag mini-round), not something to slip in
+/// with the first invented type; until then `--geometry` is how both
+/// halves agree on the regions.
+fn emitted_tag(args: &ForgeArgs) -> String {
+    match &args.geometry {
+        Some(_) => String::new(),
+        None => tag_for(&args.kind),
+    }
+}
+
+/// Read and validate a geometry file. Reading is the CLI's job: the
+/// generator crate only ever sees the text (AR1).
+fn read_geometry(path: &Path) -> Result<bpt_forge::geometry::Geometry> {
+    let text = fs::read_to_string(path)
+        .with_context(|| format!("cannot read {} — check the path", path.display()))?;
+    bpt_forge::geometry::Geometry::from_toml(&text)
+        .map_err(|e| anyhow::anyhow!("{} is not a usable geometry: {e}", path.display()))
 }
 
 fn tag_for(kind: &str) -> String {

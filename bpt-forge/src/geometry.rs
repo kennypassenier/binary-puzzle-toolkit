@@ -134,6 +134,11 @@ pub struct Geometry {
 }
 
 impl Geometry {
+    /// The regions as the solver and the generator both understand them.
+    pub fn to_regions(&self) -> Vec<Region> {
+        self.regions.iter().copied().map(Region::from).collect()
+    }
+
     /// A plain n×n puzzle: one region, the whole grid.
     pub fn standard(n: usize) -> Result<Self, GeometryError> {
         let geometry = Geometry {

@@ -122,3 +122,118 @@ What genuinely remains is the *grain*: the smallest interruptible unit
 is one puzzle, which on a 16x16 is seconds. Mini-round **B4**'s
 deterministic node budget is what would make it finer, and B4 is
 Kenny's own "later".
+
+## Q6 · Invented types have no tag, and the format cannot grow one by itself
+
+**Area quarantined:** the puzzle-line tag vocabulary.
+↳ K28 = two invented types end-to-end; S6b = Kenny's frozen choice that
+a special type is marked by a **prefix** on the line (`4x8x8:110...`).
+
+**What is built.** `4x10x10` and `8in12in16` exist as geometry files
+only — no code knows their names. Both `bpt forge` and `bpt solve` take
+`--geometry FILE`, so the two halves agree on the regions and the types
+generate and solve end to end.
+
+**What is open.** They emit **no** prefix. A reader resolves a prefix
+through a fixed vocabulary and rejects anything else, so writing
+`4x10x10:` today would produce files nothing can read. That is why K28
+made the tag a mini-round in the first place.
+
+A test pins what is at stake: the same 8in12in16 puzzle read *without*
+its geometry parses as a plain 16x16 and has more than one solution.
+Nothing crashes, which is exactly why it must not stay implicit.
+
+**Options:** register invented types in the built-in vocabulary, like
+the five published ones · resolve an unknown prefix by looking for
+`geometries/<tag>.toml`, which makes any invented type work without
+code changes but gives the format a filesystem dependency · make the
+prefix self-describing so the line carries its own regions · leave
+`--geometry` as the only way, and never tag invented types.
+
+## Q7 · Generation has no upper bound on the largest grids
+
+**Area quarantined:** none — this is a measurement. Nothing was built on
+it, and nothing was quietly weakened because of it.
+↳ G8 = the scope's performance targets for generation; AR25 = the
+decision that replaced G8's figures with a measured baseline; B4 = the
+deterministic node budget mini-round, which Kenny scheduled as "later";
+D1 = 100 validated puzzles per geometry.
+
+**What was measured** on Kenny's PC, release build, level L4:
+
+| geometry | one puzzle |
+|---|---|
+| 14x14 | 3.9 s (G8 target: under 10 s — met) |
+| 100x 10x10 | 0.7 s (G8 target: under 60 s — met) |
+| 4x6x6 | 0.05 s |
+| 4x8x8 | 5.5 s |
+| **9x6x6** | **94.4 s** (G8 target: under 30 s — **missed by 3x**) |
+| **18x18** | **2 s, 11 s, 84 s, or never** — see below |
+
+The last row is the serious one. 18x18 is not *slow*; it is
+**unbounded**, and not rarely. Five seeds, one puzzle each,
+single-threaded, release:
+
+| seed | 31 | 77 | 555 | 2026 | 909 |
+|---|---|---|---|---|---|
+| time | 11 s | 2 s | 84 s | not finished in 180 s | not finished in 180 s |
+
+Two of five did not finish in three minutes, and seed 2026 was still
+running after eighty. A separate debug-build run of an 18x18 was found
+still going after 2.8 hours. This is precisely the failure AR26
+predicted when it said a deterministic node budget was needed before
+anything could promise not to hang.
+
+**What was already done about it.** Two carve optimisations landed on
+the way to these numbers — the uniqueness proof after each removal
+became a refutation of the opposite value, and the grading call inside
+the loop lost its search — together taking a 16x16 from 30.8 s to 5.5 s
+with byte-identical output. They lowered the curve; they did not put a
+ceiling on it, and no optimisation can.
+
+**The recorded baseline**, level L4, seeds fixed, one thread, 150 s per
+sample (`benchmarks/baseline.json`):
+
+| geometry | samples finished | median | p95 | unfinished |
+|---|---|---|---|---|
+| 6x6 | 20 | 0.4 ms | 0.4 ms | — |
+| 8x8 | 20 | 1.4 ms | 2.2 ms | — |
+| 10x10 | 20 | 4.7 ms | 7.2 ms | — |
+| 12x12 | 20 | 19.7 ms | 1.02 s | — |
+| 14x14 | 10 | 146 ms | 3.45 s | — |
+| 16x16 | 2 | 6.0 s | 9.2 s | 1 of 3 |
+| 18x18 | 1 | 19.5 s | 19.5 s | 2 of 3 |
+| 20x20 | 0 | — | — | 3 of 3 |
+| 4x6x6 | 20 | 31 ms | 53 ms | — |
+| 4x8x8 | 3 | 254 ms | 5.16 s | — |
+| 9x6x6 | 2 | 1.06 s | 1.93 s | — |
+| 8in14 | 10 | 169 ms | 41.4 s | — |
+| 6in10in14 | 3 | 517 ms | 1.88 s | — |
+
+Read the spread, not the medians. 12x12 has a median of 20 ms and a p95
+of a full second — 52x. 8in14 has a median of 169 ms and a p95 of 41
+seconds — 245x. The variance is not a large-grid problem that starts at
+16x16; it is everywhere, and at the large sizes it simply crosses from
+"slow" into "never". The 9x6x6 row reads as fast at two samples, but a
+third seed took 94 s: that is the G8 miss above, and it is the same
+phenomenon.
+
+**What this blocks right now.**
+- `benchmarks/baseline.json` gives every sample 150 seconds and records
+  how many ran past it. A geometry that cannot be measured says so in
+  the file instead of carrying an invented number, and one with an
+  unfinished sample is never used by the regression guard — the guard
+  would be waiting on the same unbounded carve.
+- D1's sweep covers 100 puzzles up to 14x14 and for the smaller
+  composites, 10 at 16x16, and **skips 18x18 and 20x20 entirely** — a
+  job that can hang is worse than one that names its gap. The sweep
+  prints both the reduced counts and the skipped sizes, so a green run
+  never reads as full coverage.
+- G8's "any special type under 30 s" stays unmet at 9x6x6.
+
+**Options:** build B4's node budget now and let the carve report
+"budget exhausted" instead of running forever, which restores 18x18 and
+20x20 to the baseline and the sweep · accept the unbounded worst case,
+drop G8's figures as superseded by AR25's baseline, and document the
+largest sizes as best-effort · cap the generator's supported sizes at
+16x16 and say so in the scope.

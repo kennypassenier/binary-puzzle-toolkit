@@ -372,3 +372,61 @@ fn m26_a_cancelled_batch_is_valid_and_says_so() {
     );
     fs::remove_dir_all(&dir).ok();
 }
+
+#[test]
+fn m24_symmetry_and_clue_targets_reach_the_cli() {
+    let dir = workdir("m24");
+    let out = bpt()
+        .args(["forge", "--out-dir"])
+        .arg(&dir)
+        .args(["--kind", "8", "--count", "3", "--seed", "9"])
+        .args(["--symmetry", "rotational"])
+        .output()
+        .expect("bpt runs");
+    assert_eq!(
+        out.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+
+    for line in fs::read_to_string(dir.join("puzzles.txt")).unwrap().lines() {
+        let cells: Vec<char> = line.chars().collect();
+        for row in 0..8 {
+            for col in 0..8 {
+                let here = cells[row * 8 + col] == '.';
+                let there = cells[(7 - row) * 8 + (7 - col)] == '.';
+                assert_eq!(here, there, "not symmetric under a half turn: {line}");
+            }
+        }
+    }
+    fs::remove_dir_all(&dir).ok();
+
+    // An unreachable clue count is reported, and the batch still
+    // succeeds: every puzzle in it is valid, just heavier than asked.
+    let dir = workdir("m24-target");
+    let out = bpt()
+        .args(["forge", "--out-dir"])
+        .arg(&dir)
+        .args(["--kind", "8", "--count", "2", "--seed", "9", "--clues", "4"])
+        .output()
+        .expect("bpt runs");
+    assert_eq!(out.status.code(), Some(0));
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("could not reach 4 clues"),
+        "an unreachable target must be said out loud: {stderr}"
+    );
+    fs::remove_dir_all(&dir).ok();
+
+    // And a target that asks for the whole grid is refused up front.
+    let dir = workdir("m24-silly");
+    let out = bpt()
+        .args(["forge", "--out-dir"])
+        .arg(&dir)
+        .args(["--kind", "8", "--count", "1", "--clues", "64"])
+        .output()
+        .expect("bpt runs");
+    assert_eq!(out.status.code(), Some(2));
+    assert!(!dir.exists());
+}

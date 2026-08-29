@@ -3,7 +3,7 @@
 //! the CLI's job.
 
 pub use crate::carve::Carved;
-use crate::carve::carve;
+use crate::carve::{Options, Symmetry, carve_with};
 use crate::fill;
 use crate::grade::Level;
 use crate::rng::stream;
@@ -15,6 +15,10 @@ pub struct Plan {
     pub n: usize,
     pub regions: Vec<Region>,
     pub ceiling: Level,
+    /// Clue layout and clue count (M24). Defaults to carving as far as
+    /// the ceiling allows, with no symmetry.
+    pub symmetry: Symmetry,
+    pub target_clues: Option<usize>,
     pub seed: u64,
     pub count: u64,
     /// Give up on one puzzle after this many attempts. Retries exist to
@@ -24,11 +28,22 @@ pub struct Plan {
 }
 
 impl Plan {
+    /// The carve options this plan implies.
+    pub fn options(&self) -> Options {
+        Options {
+            ceiling: self.ceiling,
+            symmetry: self.symmetry,
+            target_clues: self.target_clues,
+        }
+    }
+
     pub fn new(n: usize, regions: Vec<Region>, ceiling: Level, seed: u64, count: u64) -> Self {
         Plan {
             n,
             regions,
             ceiling,
+            symmetry: Symmetry::None,
+            target_clues: None,
             seed,
             count,
             attempts_per_puzzle: 8,
@@ -241,7 +256,12 @@ pub fn run_until(
 pub fn regenerate(plan: &Plan, index: u64, attempt: u64) -> Option<Carved> {
     let mut rng = stream(plan.seed, index, attempt);
     let solution = fill::solution(plan.n, &plan.regions, &mut rng)?;
-    Some(carve(&solution, &plan.regions, plan.ceiling, &mut rng))
+    Some(carve_with(
+        &solution,
+        &plan.regions,
+        plan.options(),
+        &mut rng,
+    ))
 }
 
 #[cfg(test)]

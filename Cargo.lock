@@ -140,7 +140,9 @@ name = "bpt-forge"
 version = "1.0.0"
 dependencies = [
  "bpt-core",
+ "criterion",
  "insta",
+ "proptest",
  "rand",
  "rand_chacha",
  "serde",

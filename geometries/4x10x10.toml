@@ -1,0 +1,36 @@
+# Four 10x10 puzzles forming a 20x20 — an invented type, larger
+# than anything binarypuzzle.com publishes. Every quadrant AND the
+# whole grid satisfy all Takuzu rules.
+tag = "4x10x10"
+size = 20
+
+[[regions]]
+row = 0
+col = 0
+rows = 20
+cols = 20
+
+[[regions]]
+row = 0
+col = 0
+rows = 10
+cols = 10
+
+[[regions]]
+row = 0
+col = 10
+rows = 10
+cols = 10
+
+[[regions]]
+row = 10
+col = 0
+rows = 10
+cols = 10
+
+[[regions]]
+row = 10
+col = 10
+rows = 10
+cols = 10
+

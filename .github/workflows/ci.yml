@@ -53,8 +53,14 @@ jobs:
       # K13/G5 assert only in release: a debug build is an order of
       # magnitude slower and would fail meaninglessly. Without this job
       # nothing automated ever checks the speed promises.
-      - name: Threshold test (release)
+      - name: Threshold test, solver (release)
         run: cargo test --release -p bpt-core --test thresholds -- --nocapture
+      - name: Threshold test, generator (release)
+        run: cargo test --release -p bpt-forge --test thresholds -- --nocapture
+      # AR25: fail when p95 drifts past 1.5x what was recorded. Only the
+      # affordable geometries are re-measured; the file says which.
+      - name: Generation baseline (release)
+        run: cargo test --release -p bpt-forge --test baseline -- --nocapture
 
   restore-drill:
     name: restore drill from a fresh clone

@@ -27,6 +27,60 @@ pub struct Carved {
     pub clues: usize,
 }
 
+/// How clues may be laid out (M24).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Symmetry {
+    /// No constraint: every cell is removed on its own.
+    #[default]
+    None,
+    /// A clue at (r, c) implies one at (n-1-r, n-1-c) — the pattern a
+    /// half turn leaves unchanged.
+    Rotational,
+    /// A clue at (r, c) implies one at (r, n-1-c) — mirrored left to
+    /// right.
+    Mirror,
+}
+
+impl Symmetry {
+    /// The cells that must be removed together with (row, col) — always
+    /// including the cell itself, deduplicated, so a cell on the axis
+    /// gives a group of one.
+    fn orbit(self, n: usize, row: usize, col: usize) -> Vec<(usize, usize)> {
+        let partner = match self {
+            Symmetry::None => return vec![(row, col)],
+            Symmetry::Rotational => (n - 1 - row, n - 1 - col),
+            Symmetry::Mirror => (row, n - 1 - col),
+        };
+        if partner == (row, col) {
+            vec![(row, col)]
+        } else {
+            vec![(row, col), partner]
+        }
+    }
+}
+
+/// What to aim for (M24).
+#[derive(Debug, Clone, Copy)]
+pub struct Options {
+    /// Hardest level the result may need.
+    pub ceiling: Level,
+    /// Layout constraint on the clues.
+    pub symmetry: Symmetry,
+    /// Stop once this many clues remain. `None` carves as far as it can,
+    /// which is the default and what a batch wants.
+    pub target_clues: Option<usize>,
+}
+
+impl Options {
+    pub fn new(ceiling: Level) -> Self {
+        Options {
+            ceiling,
+            symmetry: Symmetry::None,
+            target_clues: None,
+        }
+    }
+}
+
 /// Carve `solution` down to a puzzle that is uniquely solvable and no
 /// harder than `ceiling`.
 ///
@@ -34,6 +88,19 @@ pub struct Carved {
 /// the result carries the same guarantee as a published puzzle: exactly
 /// one solution, verifiable without an answer key.
 pub fn carve(solution: &Grid, regions: &[Region], ceiling: Level, rng: &mut ChaCha8Rng) -> Carved {
+    carve_with(solution, regions, Options::new(ceiling), rng)
+}
+
+/// Carve under `options` (M24).
+///
+/// The loop always removes a *group*; without symmetry every group holds
+/// one cell, which is the ordinary case and the fast one (AR31).
+pub fn carve_with(
+    solution: &Grid,
+    regions: &[Region],
+    options: Options,
+    rng: &mut ChaCha8Rng,
+) -> Carved {
     let n = solution.size();
     let mut working = solution.clone();
 
@@ -41,23 +108,38 @@ pub fn carve(solution: &Grid, regions: &[Region], ceiling: Level, rng: &mut ChaC
     order.shuffle(rng);
 
     for (row, col) in order {
-        let removed = working.get(row, col);
-        if removed.is_empty() {
+        if let Some(target) = options.target_clues {
+            // Asking for a clue count means asking to stop, not to keep
+            // going and hope. Carving further would only walk past it.
+            if working.filled_count() <= target {
+                break;
+            }
+        }
+        let group = options.symmetry.orbit(n, row, col);
+        let removed: Vec<Cell> = group.iter().map(|(r, c)| working.get(*r, *c)).collect();
+        if removed.iter().any(|cell| cell.is_empty()) {
             continue;
         }
-        working.set(row, col, Cell::Empty);
+        for (r, c) in &group {
+            working.set(*r, *c, Cell::Empty);
+        }
 
         // At L4 the ceiling cannot reject anything — every candidate is
         // solvable by construction and L4 is the top of the scale — so
         // the ladder is not run at all in the default case. Below L4 it
         // decides, and it is the only thing that has to.
-        let acceptable = still_unique_without(&working, regions, row, col, removed)
-            && (ceiling == Level::L4
-                || fits_ceiling(&Puzzle::custom(working.clone(), regions.to_vec()), ceiling));
+        let acceptable = still_unique(&working, regions, &group, &removed)
+            && (options.ceiling == Level::L4
+                || fits_ceiling(
+                    &Puzzle::custom(working.clone(), regions.to_vec()),
+                    options.ceiling,
+                ));
         // A removal that costs uniqueness, or that pushes the puzzle past
         // the requested ceiling, is put back and never tried again.
         if !acceptable {
-            working.set(row, col, removed);
+            for ((r, c), cell) in group.iter().zip(&removed) {
+                working.set(*r, *c, *cell);
+            }
         }
     }
 
@@ -68,6 +150,33 @@ pub fn carve(solution: &Grid, regions: &[Region], ceiling: Level, rng: &mut ChaC
         puzzle: working,
         solution: solution.clone(),
         level: measured,
+    }
+}
+
+/// Does the puzzle still have exactly one solution now that `group` is
+/// empty?
+///
+/// A single removed cell takes the cheap route below. A group of two
+/// cannot: the argument there rests on there being exactly one cell
+/// whose value is in question, so a symmetric carve pays for a full
+/// uniqueness proof per group. That is the cost of symmetry, and M24
+/// says so.
+fn still_unique(
+    working: &Grid,
+    regions: &[Region],
+    group: &[(usize, usize)],
+    removed: &[Cell],
+) -> bool {
+    match group {
+        [(row, col)] => still_unique_without(working, regions, *row, *col, removed[0]),
+        _ => matches!(
+            solve(
+                &Puzzle::custom(working.clone(), regions.to_vec()),
+                SolveMode::ProveUniqueness,
+                &mut NullObserver,
+            ),
+            SolveOutcome::Solved { .. }
+        ),
     }
 }
 
@@ -229,6 +338,85 @@ mod tests {
              a higher ceiling must carve deeper on average",
             seeds.count()
         );
+    }
+
+    fn carved_with(seed: u64, options: Options) -> Carved {
+        let regions = standard(8);
+        let mut rng = crate::rng::stream(seed, 0, 0);
+        let solution = crate::fill::solution(8, &regions, &mut rng).expect("solvable");
+        carve_with(&solution, &regions, options, &mut rng)
+    }
+
+    #[test]
+    fn m24_a_symmetric_carve_produces_a_symmetric_clue_pattern() {
+        type Partner = fn(usize, usize, usize) -> (usize, usize);
+        let rotational: Partner = |n, r, c| (n - 1 - r, n - 1 - c);
+        let mirror: Partner = |n, r, c| (r, n - 1 - c);
+        for (symmetry, partner) in [
+            (Symmetry::Rotational, rotational),
+            (Symmetry::Mirror, mirror),
+        ] {
+            let mut options = Options::new(Level::L4);
+            options.symmetry = symmetry;
+            let out = carved_with(4, options);
+            for row in 0..8 {
+                for col in 0..8 {
+                    let (pr, pc) = partner(8, row, col);
+                    assert_eq!(
+                        out.puzzle.get(row, col).is_empty(),
+                        out.puzzle.get(pr, pc).is_empty(),
+                        "{symmetry:?}: ({row},{col}) and ({pr},{pc}) disagree"
+                    );
+                }
+            }
+            // Still a real puzzle, not just a pretty pattern.
+            assert!(out.clues > 0 && out.clues < 64);
+        }
+    }
+
+    #[test]
+    fn m24_symmetry_costs_clues() {
+        // Removing in pairs means a pair that breaks uniqueness keeps
+        // both cells, so a symmetric puzzle carries more clues than a
+        // free one. Stated over seeds: the loop is greedy, so a single
+        // seed can go either way.
+        let (mut free, mut symmetric) = (0, 0);
+        for seed in 1..8 {
+            free += carved_with(seed, Options::new(Level::L4)).clues;
+            let mut options = Options::new(Level::L4);
+            options.symmetry = Symmetry::Rotational;
+            symmetric += carved_with(seed, options).clues;
+        }
+        assert!(
+            symmetric > free,
+            "symmetric kept {symmetric} clues over seven seeds, free kept {free}"
+        );
+    }
+
+    #[test]
+    fn m24_a_clue_target_stops_the_carve() {
+        let mut options = Options::new(Level::L4);
+        options.target_clues = Some(40);
+        let out = carved_with(4, options);
+        assert!(
+            out.clues <= 40 + 1,
+            "asked to stop at 40 clues, stopped at {}",
+            out.clues
+        );
+        // And it is still a puzzle with one solution, not a truncated
+        // grid: the ceiling and uniqueness rules applied throughout.
+        assert!(out.clues > 40 - 8, "stopped far short: {}", out.clues);
+    }
+
+    #[test]
+    fn m24_an_unreachable_clue_target_carves_as_far_as_it_can() {
+        // Nothing can reach one clue. The carve must not spin or lie —
+        // it stops where uniqueness stops it, and the caller compares.
+        let mut options = Options::new(Level::L4);
+        options.target_clues = Some(1);
+        let out = carved_with(4, options);
+        assert!(out.clues > 1, "one clue cannot determine an 8x8");
+        assert_eq!(out.clues, carved_with(4, Options::new(Level::L4)).clues);
     }
 
     #[test]

@@ -1,0 +1,24 @@
+# An 8x8 inside a 12x12 inside a 16x16, all three centred and all
+# three valid on their own — an invented type extending the nesting
+# idea of 6in10in14 by one size.
+tag = "8in12in16"
+size = 16
+
+[[regions]]
+row = 0
+col = 0
+rows = 16
+cols = 16
+
+[[regions]]
+row = 2
+col = 2
+rows = 12
+cols = 12
+
+[[regions]]
+row = 4
+col = 4
+rows = 8
+cols = 8
+
