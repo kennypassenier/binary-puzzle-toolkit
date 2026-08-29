@@ -289,12 +289,27 @@ and 182 s for its three baseline seeds.
 
 **What B4 does and does not promise.** It bounds one uniqueness
 question, not a whole carve, and a carve asks that question once per
-cell. Termination is therefore guaranteed and the bound is loose:
-measured worst case, a 16x16 that took 879 s with only two budget hits
-— nearly every one of its searches was expensive but stayed under the
-limit, so the budget barely engaged. "Never finishes" became "finishes,
-sometimes slowly", which is the promise AR26 asked for; making it fast
-as well is a separate question about the size of the budget. What the budget costs, measured against an
+cell. Termination is guaranteed; speed is not. "Never finishes" became
+"finishes, sometimes slowly", which is the promise AR26 asked for.
+
+The worst case measured is a 16x16 taking 879 s with only two budget
+hits. The obvious explanation — that its searches were expensive but
+stayed just under the limit — is wrong, and measuring it said so:
+re-running the same puzzle with the budget cut from 200 000 to 5 000
+took 852 s, essentially unchanged, for two extra clues.
+
+So the time is not in the bounded search at all. `solve` runs the full
+strategy ladder to a fixpoint *before* any search, and the budget counts
+search nodes only — the ladder is unbudgeted. A carve asks ~n² such
+questions, so on a 16x16 the ladder runs a few hundred times and that,
+not the search, is where the seconds go. It terminates (a fixpoint over
+a finite grid always does), which is why B4 still delivers what it
+promised.
+
+Making large grids *fast* is therefore a different lever from B4:
+either a cheaper refutation that skips the expensive tier, or a ladder
+that does not restart from nothing after every removal. Not built,
+recorded here. What the budget costs, measured against an
 effectively unbounded 50 million: nothing at 12x12 (0 of 20 puzzles) and
 14x14 (0 of 10); one extra clue at 8in14 (1 of 10); no extra clues at
 16x16 (2 of 3). 18x18 and 20x20 are back in the baseline and in D1's
