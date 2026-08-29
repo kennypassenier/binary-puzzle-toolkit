@@ -133,6 +133,23 @@ pub struct Geometry {
     pub regions: Vec<RegionSpec>,
 }
 
+/// How many distinct balanced lines of length `n` exist: C(n, n/2).
+///
+/// Saturating, because the answer only matters while it is small — once
+/// it exceeds any plausible region width the comparison is settled, and
+/// a 20-long line already allows 184 756.
+fn balanced_lines(n: usize) -> usize {
+    let half = n / 2;
+    let mut result: usize = 1;
+    for i in 0..half {
+        result = result.saturating_mul(n - i) / (i + 1);
+        if result > MAX_SUPPORTED_SIZE {
+            return usize::MAX;
+        }
+    }
+    result
+}
+
 impl Geometry {
     /// The regions as the solver and the generator both understand them.
     pub fn to_regions(&self) -> Vec<Region> {
@@ -212,6 +229,36 @@ impl Geometry {
                     rows: region.rows,
                     cols: region.cols,
                 });
+            }
+            // A flat region can run out of lines to be different from.
+            // There are only C(h, h/2) balanced lines of length h, so a
+            // region with more than that many of them cannot keep them
+            // all distinct — no matter how it is filled.
+            //
+            // Found by trying it: three 4x12 bands in a 12x12 need twelve
+            // distinct balanced columns of height 4, and only six exist.
+            // Before this check that was a search that ran and then
+            // reported "no solution, no seed will help"; now it is a
+            // structural answer with a reason (AR32.5).
+            if region.rules.balance && region.rules.unique_lines {
+                for along_columns in [true, false] {
+                    let (length, count) = if along_columns {
+                        (region.rows, region.cols)
+                    } else {
+                        (region.cols, region.rows)
+                    };
+                    let available = balanced_lines(length);
+                    if count > available {
+                        return Err(GeometryError::RegionTooFlat {
+                            region: index,
+                            rows: region.rows,
+                            cols: region.cols,
+                            needed: count,
+                            available,
+                            along_columns,
+                        });
+                    }
+                }
             }
         }
         Ok(())

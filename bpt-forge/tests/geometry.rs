@@ -147,6 +147,11 @@ balance = false
 fn ar3b_rectangular_regions_are_accepted() {
     // The overlapping-band family (scope G3) needs non-square regions;
     // this is the shape binsolve cannot express until mini-round B3.
+    // A 6x12 half rather than the 4x12 band this test used to carry:
+    // that band is impossible and now says so, because twelve columns of
+    // height 4 cannot all differ when only six such lines exist. The
+    // claim being tested is that a rectangle is *representable*, which
+    // never depended on that particular rectangle being fillable.
     let band = r#"
 size = 12
 [[regions]]
@@ -155,13 +160,13 @@ col = 0
 rows = 12
 cols = 12
 [[regions]]
-row = 4
+row = 6
 col = 0
-rows = 4
+rows = 6
 cols = 12
 "#;
     let geometry = Geometry::from_toml(band).unwrap();
-    assert_eq!(geometry.regions[1].rows, 4);
+    assert_eq!(geometry.regions[1].rows, 6);
     assert_eq!(geometry.regions[1].cols, 12);
 }
 
@@ -287,4 +292,39 @@ fn ar6_error_messages_never_panic_on_absurd_input() {
         let text = err.to_string();
         assert!(text.contains("Remedy:"), "size {size}: {text}");
     }
+}
+
+/// A region can be too flat to satisfy its own unique-lines rule, and
+/// that is decidable without any search: there are only C(h, h/2)
+/// balanced lines of length h.
+///
+/// Found by trying a candidate type — three 4x12 bands in a 12x12 —
+/// which needs twelve distinct balanced columns of height 4 where only
+/// six exist. Before this check it cost a full search that ended in
+/// "no solution, no seed will help".
+#[test]
+fn k23_a_region_too_flat_for_distinct_lines_is_refused_structurally() {
+    let toml = "size = 12\n\n\
+        [[regions]]\nrow = 0\ncol = 0\nrows = 12\ncols = 12\n\n\
+        [[regions]]\nrow = 0\ncol = 0\nrows = 4\ncols = 12\n";
+    let err = bpt_forge::geometry::Geometry::from_toml(toml)
+        .expect_err("a 4x12 band cannot keep twelve columns distinct");
+    let text = err.to_string();
+    assert!(text.contains("only 6 distinct"), "{text}");
+    assert!(
+        text.contains("Remedy"),
+        "every error carries a remedy: {text}"
+    );
+}
+
+/// The check must not reject shapes that are merely rectangular: two
+/// 6x12 halves of a 12x12 need twelve distinct columns of height 6, and
+/// twenty exist.
+#[test]
+fn k23_a_rectangular_region_that_fits_is_accepted() {
+    let toml = "size = 12\n\n\
+        [[regions]]\nrow = 0\ncol = 0\nrows = 12\ncols = 12\n\n\
+        [[regions]]\nrow = 0\ncol = 0\nrows = 6\ncols = 12\n\n\
+        [[regions]]\nrow = 6\ncol = 0\nrows = 6\ncols = 12\n";
+    bpt_forge::geometry::Geometry::from_toml(toml).expect("6x12 halves are fillable");
 }

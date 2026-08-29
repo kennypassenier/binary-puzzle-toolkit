@@ -191,7 +191,7 @@ fn main() -> ExitCode {
     match dispatch() {
         Ok(code) => ExitCode::from(code),
         Err(err) => {
-            eprintln!("binsolve: {err:#}");
+            eprintln!("bpt: {err:#}");
             ExitCode::from(EXIT_USAGE)
         }
     }
@@ -411,6 +411,17 @@ fn run_forge(args: ForgeArgs) -> Result<u8> {
     }
 }
 
+/// What to call the geometry in a message. `--kind` keeps its default
+/// even when `--geometry` was given, so reporting it would name a type
+/// the run never touched — found by an over-constrained geometry file
+/// being blamed on "the 8 geometry".
+fn geometry_name(args: &ForgeArgs) -> String {
+    match &args.geometry {
+        Some(path) => path.display().to_string(),
+        None => args.kind.clone(),
+    }
+}
+
 fn symmetry_for(name: &str) -> Result<Symmetry> {
     match name.to_lowercase().as_str() {
         "none" => Ok(Symmetry::None),
@@ -454,7 +465,7 @@ fn forge_stream(args: &ForgeArgs, plan: &Plan) -> Result<u8> {
         &mut parallel::OnAllCores,
         &mut |_, _| {},
     );
-    check_geometry(&outcome, &args.kind)?;
+    check_geometry(&outcome, &geometry_name(args))?;
 
     let tag = emitted_tag(args);
     let mut lines = Vec::new();
@@ -538,7 +549,7 @@ fn forge_batch(args: &ForgeArgs, plan: &Plan, dir: &Path) -> Result<u8> {
     if show_progress {
         eprintln!();
     }
-    check_geometry(&outcome, &args.kind)?;
+    check_geometry(&outcome, &geometry_name(args))?;
     let elapsed = started.elapsed();
 
     fs::create_dir_all(dir)

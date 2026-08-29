@@ -30,6 +30,18 @@ pub enum GeometryError {
         rows: usize,
         cols: usize,
     },
+    /// A region asks for more distinct lines than exist at its size.
+    RegionTooFlat {
+        region: usize,
+        rows: usize,
+        cols: usize,
+        /// How many lines the region needs to keep distinct.
+        needed: usize,
+        /// How many distinct balanced lines of that length exist at all.
+        available: usize,
+        /// Whether the shortage is in the columns or the rows.
+        along_columns: bool,
+    },
     /// A region has no extent at all.
     RegionEmpty { region: usize },
     /// No regions were declared, so nothing constrains the grid.
@@ -108,6 +120,29 @@ impl fmt::Display for GeometryError {
                  its lines, which is impossible on an odd length — make both \
                  sides even, or drop the balance rule for this region."
             ),
+            GeometryError::RegionTooFlat {
+                region,
+                rows,
+                cols,
+                needed,
+                available,
+                along_columns,
+            } => {
+                let (kind, length) = if *along_columns {
+                    ("columns", rows)
+                } else {
+                    ("rows", cols)
+                };
+                write!(
+                    f,
+                    "region {region} is {rows}x{cols}: it has {needed} {kind} of length \
+                     {length}, but only {available} distinct balanced lines of that \
+                     length exist\n\
+                     Remedy: no filling can make {needed} lines all different when there \
+                     are only {available} to choose from. Make the region less flat — \
+                     closer to square — or drop its unique-lines rule."
+                )
+            }
             GeometryError::RegionEmpty { region } => write!(
                 f,
                 "region {region} has zero width or height\n\
