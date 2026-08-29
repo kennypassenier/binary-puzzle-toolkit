@@ -33,7 +33,7 @@ fn load(dir: &Path) -> Manifest {
 /// manifest, which is the property the drill is really testing: a
 /// manifest that cannot reconstruct its own plan cannot restore
 /// anything.
-fn plan_from(manifest: &Manifest) -> Plan {
+fn plan_from(manifest: &Manifest, seed: u64) -> Plan {
     let regions = match manifest.kind.parse::<usize>() {
         Ok(n) => vec![Region::square(0, 0, n)],
         Err(_) => PuzzleKind::from_tag(&manifest.kind)
@@ -44,7 +44,7 @@ fn plan_from(manifest: &Manifest) -> Plan {
         manifest.grid_size,
         regions,
         manifest.level_ceiling,
-        manifest.seed,
+        seed,
         manifest.requested,
     )
 }
@@ -59,9 +59,10 @@ fn m30_a_stored_batch_regenerates_byte_for_byte() {
         "the fixture was graded by a different ladder — regrade the fixture deliberately, \
          do not weaken the drill"
     );
-    let plan = plan_from(&manifest);
-
     for entry in &manifest.puzzles {
+        // The seed travels with the puzzle, not with the file: a
+        // directory can hold several runs, each with its own.
+        let plan = plan_from(&manifest, entry.seed);
         let carved = batch::regenerate(&plan, entry.index, entry.attempt)
             .expect("the fixture's geometry is solvable");
         let stored = fs::read_to_string(dir.join(&entry.file))
@@ -98,6 +99,7 @@ fn m30_a_stored_batch_regenerates_byte_for_byte() {
         .puzzles
         .iter()
         .map(|entry| {
+            let plan = plan_from(&manifest, entry.seed);
             let carved = batch::regenerate(&plan, entry.index, entry.attempt).unwrap();
             format!("{}\n", carved.puzzle.to_line())
         })
@@ -109,7 +111,7 @@ fn m30_a_stored_batch_regenerates_byte_for_byte() {
 fn m30_an_altered_manifest_makes_the_drill_fail() {
     let dir = fixture_dir();
     let mut manifest = load(&dir);
-    let plan = plan_from(&manifest);
+    let plan = plan_from(&manifest, manifest.puzzles[0].seed);
 
     // Exactly the failure the drill exists to catch: a manifest whose
     // triple no longer points at the file next to it.
@@ -128,8 +130,8 @@ fn m30_an_altered_manifest_makes_the_drill_fail() {
     );
 
     // And a tampered seed must not quietly restore either.
-    let mut wrong = plan_from(&manifest);
-    wrong.seed = manifest.seed + 1;
+    let mut wrong = plan_from(&manifest, manifest.puzzles[0].seed);
+    wrong.seed += 1;
     let elsewhere = batch::regenerate(&wrong, 0, 0).unwrap();
     assert_ne!(
         elsewhere.puzzle.to_line(),

@@ -397,6 +397,9 @@ fn run_forge(args: ForgeArgs) -> Result<u8> {
     let mut plan = Plan::new(n, regions, ceiling, args.seed, args.count);
     plan.symmetry = symmetry_for(&args.symmetry)?;
     plan.target_clues = args.clues;
+    if args.count == 0 {
+        bail!("--count 0 would generate nothing — ask for at least one puzzle");
+    }
     if let Some(target) = args.clues {
         let cells = n * n;
         if target >= cells {
@@ -499,19 +502,40 @@ fn forge_stream(args: &ForgeArgs, plan: &Plan) -> Result<u8> {
 /// small grids there is nothing to stream, and a failure before the
 /// first write leaves no half-batch to clean up.
 fn forge_batch(args: &ForgeArgs, plan: &Plan, dir: &Path) -> Result<u8> {
-    let existing = existing_puzzles(dir)?;
-    if !existing.is_empty() && !args.force {
-        bail!(
-            "{} already holds {} puzzle(s) — a batch owns its directory. \
-             Use --force to add to it, or pick an empty directory",
-            dir.display(),
-            existing.len()
-        );
+    let previous = existing_batch(dir)?;
+    if let Some((manifest, lines)) = &previous {
+        if !args.force {
+            bail!(
+                "{} already holds {} puzzle(s) — a batch owns its directory. \
+                 Use --force to add to it, or pick an empty directory",
+                dir.display(),
+                lines.len()
+            );
+        }
+        // One directory, one geometry. Two would leave a manifest that
+        // cannot describe its own contents with one set of fields, and
+        // the restore drill rebuilds every puzzle from those fields.
+        let wanted = geometry_name(args);
+        if manifest.kind != wanted || manifest.level_ceiling != plan.ceiling {
+            bail!(
+                "{} holds {} puzzles at level {}, and this run would add {} at {} — \
+                 one directory holds one geometry at one level. \
+                 Use a different directory",
+                dir.display(),
+                manifest.kind,
+                manifest.level_ceiling.name(),
+                wanted,
+                plan.ceiling.name()
+            );
+        }
     }
     // AR28: a run into a populated directory stays deterministic, but
     // reproduces differently than into an empty one, so the starting
     // set is part of the batch's identity.
-    let mut seen = existing;
+    let mut seen: HashSet<String> = previous
+        .iter()
+        .flat_map(|(_, lines)| lines.iter().map(|line| untagged(line).to_string()))
+        .collect();
 
     let started = Instant::now();
     // M26: progress on a terminal, silence in a pipe. It goes to stderr
@@ -563,7 +587,7 @@ fn forge_batch(args: &ForgeArgs, plan: &Plan, dir: &Path) -> Result<u8> {
     // protects against — but an error can, and leaving a directory of
     // puzzles with no manifest behind would look like a batch to
     // everything except a reader that checks.
-    let written = match write_batch(args, plan, dir, &outcome, elapsed) {
+    let written = match write_batch(args, plan, dir, &outcome, elapsed, previous.as_ref()) {
         Ok(written) => written,
         Err(err) => {
             discard_batch(dir, &outcome, plan);
@@ -587,16 +611,32 @@ fn forge_batch(args: &ForgeArgs, plan: &Plan, dir: &Path) -> Result<u8> {
 /// Write the whole batch: one corpus file per puzzle, the flat file the
 /// solver validates, then the manifest — in that order, each fsynced
 /// before the next depends on it (AR29).
+#[allow(clippy::too_many_arguments)]
 fn write_batch(
     args: &ForgeArgs,
     plan: &Plan,
     dir: &Path,
     outcome: &Outcome,
     elapsed: std::time::Duration,
+    previous: Option<&(forge_manifest::Manifest, Vec<String>)>,
 ) -> Result<forge_manifest::Manifest> {
     let tag = emitted_tag(args);
-    let mut entries = Vec::new();
-    let mut flat = String::new();
+    // G1: what was already here comes along. Before this, a --force run
+    // rewrote both the flat file and the manifest with only its own
+    // puzzles, so earlier ones stayed on disk while disappearing from
+    // everything that describes the directory — validation checked two
+    // of five, and the restore drill restored two of five.
+    let (mut entries, mut flat) = match previous {
+        Some((manifest, lines)) => {
+            let mut flat = String::new();
+            for line in lines {
+                flat.push_str(line);
+                flat.push('\n');
+            }
+            (manifest.puzzles.clone(), flat)
+        }
+        None => (Vec::new(), String::new()),
+    };
     for produced in &outcome.produced {
         let carved = &produced.carved;
         let line = format!("{tag}{}", carved.puzzle.to_line());
@@ -611,6 +651,7 @@ fn write_batch(
         flat.push('\n');
         entries.push(forge_manifest::Entry {
             file: name,
+            seed: plan.seed,
             index: produced.index,
             attempt: produced.attempt,
             level: carved.level,
@@ -631,7 +672,6 @@ fn write_batch(
         kind: args.kind.clone(),
         grid_size: plan.n,
         level_ceiling: plan.ceiling,
-        seed: plan.seed,
         requested: plan.count,
         completed: outcome.produced.len() as u64,
         status: if outcome.complete() {
@@ -675,23 +715,43 @@ fn batch_file_name(seed: u64, index: u64, level: Level) -> String {
     format!("bf-{seed}-{index}-{}.txt", level.name())
 }
 
-/// Read back the puzzle lines already in a directory, so a `--force` run
-/// adds only what is new (M21). Reads the flat file rather than the
-/// per-puzzle files: it holds exactly the lines the duplicate check
-/// compares, in one read.
-fn existing_puzzles(dir: &Path) -> Result<HashSet<String>> {
-    let flat = dir.join(FLAT_FILE);
-    if !flat.exists() {
-        return Ok(HashSet::new());
+/// What a directory already holds: its manifest, and the puzzle line of
+/// every file that manifest names.
+///
+/// The manifest is the authority rather than the flat file, because the
+/// manifest is what says which files belong to the batch. A file it
+/// names that has gone missing is an error, not something to work
+/// around: the directory and its description have to agree before a run
+/// adds to them.
+fn existing_batch(dir: &Path) -> Result<Option<(forge_manifest::Manifest, Vec<String>)>> {
+    let path = dir.join(MANIFEST_FILE);
+    if !path.exists() {
+        return Ok(None);
     }
-    let text = fs::read_to_string(&flat)
-        .with_context(|| format!("cannot read {} — remove it to start fresh", flat.display()))?;
-    Ok(text
-        .lines()
-        .map(|line| line.split_once(':').map_or(line, |(_, rest)| rest))
-        .filter(|line| !line.is_empty())
-        .map(str::to_string)
-        .collect())
+    let text = fs::read_to_string(&path)
+        .with_context(|| format!("cannot read {} — remove it to start fresh", path.display()))?;
+    let manifest = forge_manifest::Manifest::from_json(&text)
+        .with_context(|| format!("{} is not a readable manifest", path.display()))?;
+
+    let mut lines = Vec::with_capacity(manifest.puzzles.len());
+    for entry in &manifest.puzzles {
+        let body = fs::read_to_string(dir.join(&entry.file)).with_context(|| {
+            format!(
+                "{} lists {} but that file is gone — the directory and its manifest \
+                 disagree, so nothing was added",
+                path.display(),
+                entry.file
+            )
+        })?;
+        let line = body.lines().next().unwrap_or_default().to_string();
+        lines.push(line);
+    }
+    Ok(Some((manifest, lines)))
+}
+
+/// The grid part of a puzzle line, without any tag.
+fn untagged(line: &str) -> &str {
+    line.split_once(':').map_or(line, |(_, rest)| rest)
 }
 
 fn describe(shortfall: &Shortfall) -> String {

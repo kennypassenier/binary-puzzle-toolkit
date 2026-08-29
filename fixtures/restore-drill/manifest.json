@@ -1,64 +1,75 @@
 {
   "tool_version": "1.0.0",
-  "tool_revision": "4db63c2-dirty",
+  "tool_revision": "1517506-dirty",
   "grading_version": 1,
   "kind": "8",
   "grid_size": 8,
   "level_ceiling": "L4",
-  "seed": 20260829,
   "requested": 6,
   "completed": 6,
   "status": "complete",
-  "elapsed_ms": 8,
+  "elapsed_ms": 2,
   "notes": [],
   "puzzles": [
     {
       "file": "bf-20260829-0-L4.txt",
+      "seed": 20260829,
       "index": 0,
       "attempt": 0,
       "level": "L4",
       "clues": 14,
-      "digest": "21aca3bb59235578"
+      "digest": "21aca3bb59235578",
+      "budget_hits": 0
     },
     {
       "file": "bf-20260829-1-L2.txt",
+      "seed": 20260829,
       "index": 1,
       "attempt": 0,
       "level": "L2",
       "clues": 15,
-      "digest": "c8b07bab31efde26"
+      "digest": "c8b07bab31efde26",
+      "budget_hits": 0
     },
     {
       "file": "bf-20260829-2-L4.txt",
+      "seed": 20260829,
       "index": 2,
       "attempt": 0,
       "level": "L4",
       "clues": 16,
-      "digest": "567cbaf9ea830de3"
+      "digest": "567cbaf9ea830de3",
+      "budget_hits": 0
     },
     {
       "file": "bf-20260829-3-L4.txt",
+      "seed": 20260829,
       "index": 3,
       "attempt": 0,
       "level": "L4",
       "clues": 15,
-      "digest": "a903e7fef5e2b172"
+      "digest": "a903e7fef5e2b172",
+      "budget_hits": 0
     },
     {
       "file": "bf-20260829-4-L4.txt",
+      "seed": 20260829,
       "index": 4,
       "attempt": 0,
       "level": "L4",
       "clues": 12,
-      "digest": "d51af9caf9bc923f"
+      "digest": "d51af9caf9bc923f",
+      "budget_hits": 0
     },
     {
       "file": "bf-20260829-5-L4.txt",
+      "seed": 20260829,
       "index": 5,
       "attempt": 0,
       "level": "L4",
       "clues": 14,
-      "digest": "d2db57467f12a16c"
+      "digest": "d2db57467f12a16c",
+      "budget_hits": 0
     }
   ]
 }

@@ -37,10 +37,17 @@ pub struct Manifest {
     /// batch with a newer ladder can legitimately move a puzzle, and
     /// without this field that shows up as an unexplained mismatch.
     pub grading_version: u32,
+    /// The geometry every puzzle in this directory was generated for. A
+    /// run that would add a different one is refused rather than mixed
+    /// in: a directory holding two geometries could not describe itself
+    /// with one set of fields, and nothing downstream expects that.
     pub kind: String,
     pub grid_size: usize,
     pub level_ceiling: Level,
-    pub seed: u64,
+    /// `requested` and `completed` describe the run that last wrote this
+    /// file. `puzzles` describes the whole directory, which after a
+    /// `--force` run holds more than that run produced — each entry
+    /// carries the seed it came from.
     pub requested: u64,
     pub completed: u64,
     pub status: Status,
@@ -56,6 +63,9 @@ pub struct Manifest {
 pub struct Entry {
     pub file: String,
     /// The three numbers that regenerate exactly this puzzle (AR28).
+    /// The seed lives here rather than at the top because a directory
+    /// can accumulate runs, and each brought its own.
+    pub seed: u64,
     pub index: u64,
     pub attempt: u64,
     pub level: Level,
@@ -115,7 +125,6 @@ mod tests {
             kind: "6".into(),
             grid_size: 6,
             level_ceiling: Level::L4,
-            seed: 7,
             requested: 2,
             completed: 2,
             status: Status::Complete,
@@ -123,6 +132,7 @@ mod tests {
             notes: Vec::new(),
             puzzles: vec![Entry {
                 file: "bf-7-0-L2.txt".into(),
+                seed: 7,
                 index: 0,
                 attempt: 0,
                 level: Level::L2,
@@ -137,7 +147,7 @@ mod tests {
     fn m23_a_manifest_round_trips_through_json() {
         let text = sample().to_json().expect("serializes");
         let back = Manifest::from_json(&text).expect("parses back");
-        assert_eq!(back.seed, 7);
+        assert_eq!(back.puzzles[0].seed, 7);
         assert_eq!(back.status, Status::Complete);
         assert_eq!(back.puzzles[0].file, "bf-7-0-L2.txt");
         assert_eq!(back.puzzles[0].digest, digest("..1.0."));

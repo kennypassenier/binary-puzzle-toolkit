@@ -134,7 +134,29 @@ fn ar29_a_batch_owns_its_directory() {
     );
     // The refusal changed nothing.
     assert_eq!(manifest(&dir).completed, 3);
+    fs::remove_dir_all(&dir).ok();
+}
 
+/// M21's real promise: duplicates are refused against the corpus being
+/// added to, not merely within one run.
+///
+/// The test this replaces looked like it covered exactly this — it read
+/// puzzles.txt after a --force run and checked the lines were distinct —
+/// but that file then held only the new batch, so it passed no matter
+/// what. A green test asserting nothing is worse than a missing one.
+#[test]
+fn m21_a_forced_run_adds_to_the_corpus_instead_of_replacing_it() {
+    let dir = workdir("forced");
+    assert_eq!(forge(&dir, &["--count", "3"]).status.code(), Some(0));
+    let first: Vec<String> = manifest(&dir)
+        .puzzles
+        .iter()
+        .map(|p| p.file.clone())
+        .collect();
+
+    // Same seed again: every puzzle it would produce is already there,
+    // so the run must find them and roll past them rather than write
+    // them twice.
     let forced = forge(&dir, &["--count", "3", "--force"]);
     assert_eq!(
         forced.status.code(),
@@ -142,10 +164,84 @@ fn ar29_a_batch_owns_its_directory() {
         "{}",
         String::from_utf8_lossy(&forced.stderr)
     );
+
+    let manifest = manifest(&dir);
+    assert_eq!(manifest.puzzles.len(), 6, "the directory holds both runs");
+    assert_eq!(
+        manifest.completed, 3,
+        "while completed counts this run only"
+    );
+    for file in &first {
+        assert!(
+            manifest.puzzles.iter().any(|p| p.file == *file),
+            "{file} vanished from the manifest"
+        );
+    }
+
+    // The flat file — what validation reads — covers everything.
     let flat = fs::read_to_string(dir.join("puzzles.txt")).unwrap();
+    assert_eq!(flat.lines().count(), 6);
     let distinct: std::collections::HashSet<_> = flat.lines().collect();
-    assert_eq!(distinct.len(), flat.lines().count(), "M21: no duplicates");
+    assert_eq!(distinct.len(), 6, "and the second run repeated nothing");
+
+    // Every file the manifest names is really there.
+    for entry in &manifest.puzzles {
+        assert!(dir.join(&entry.file).exists(), "{} is missing", entry.file);
+    }
     fs::remove_dir_all(&dir).ok();
+}
+
+/// One directory, one geometry: a manifest cannot describe two with one
+/// set of fields, and the restore drill rebuilds from those fields.
+#[test]
+fn m21_a_forced_run_refuses_a_different_geometry() {
+    let dir = workdir("mixed");
+    assert_eq!(forge(&dir, &["--count", "2"]).status.code(), Some(0));
+
+    let out = bpt()
+        .args(["forge", "--out-dir"])
+        .arg(&dir)
+        .args(["--kind", "8", "--count", "1", "--force"])
+        .output()
+        .expect("bpt runs");
+    assert_eq!(out.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("one geometry"), "{stderr}");
+    assert_eq!(manifest(&dir).puzzles.len(), 2, "and nothing was added");
+    fs::remove_dir_all(&dir).ok();
+}
+
+/// A directory whose manifest names a file that is gone is not a
+/// directory to add to.
+#[test]
+fn m21_a_forced_run_stops_when_the_directory_and_manifest_disagree() {
+    let dir = workdir("torn");
+    assert_eq!(forge(&dir, &["--count", "3"]).status.code(), Some(0));
+    let victim = manifest(&dir).puzzles[1].file.clone();
+    fs::remove_file(dir.join(&victim)).expect("remove one puzzle");
+
+    let out = forge(&dir, &["--count", "1", "--force"]);
+    assert_eq!(out.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains(&victim), "name the missing file: {stderr}");
+    assert!(stderr.contains("disagree"), "{stderr}");
+    fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn k29_an_empty_batch_is_refused() {
+    // Nobody asks for nothing on purpose; a run that succeeds silently
+    // hides the typo that produced it.
+    let out = bpt()
+        .args(["forge", "--kind", "6", "--count", "0"])
+        .output()
+        .expect("bpt runs");
+    assert_eq!(out.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("at least one"),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
 }
 
 #[test]
