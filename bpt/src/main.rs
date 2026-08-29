@@ -32,10 +32,14 @@ const EXIT_USAGE: u8 = 2;
 const FLAT_FILE: &str = "puzzles.txt";
 const MANIFEST_FILE: &str = "manifest.toml";
 
+/// B5: the release number alone cannot identify a build, and the batch
+/// manifests record this exact string.
+const VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), " (", env!("BPT_GIT_REV"), ")");
+
 #[derive(Parser, Debug)]
 #[command(
     name = "bpt",
-    version,
+    version = VERSION,
     about = "BinaryPuzzleToolkit — solve, generate and inspect binary puzzles",
     long_about = None
 )]
@@ -485,7 +489,7 @@ fn write_batch(
     atomic::sync_dir(dir)?;
     let manifest = forge_manifest::Manifest {
         tool_version: env!("CARGO_PKG_VERSION").to_string(),
-        tool_revision: option_env!("BPT_GIT_REV").unwrap_or("unknown").to_string(),
+        tool_revision: env!("BPT_GIT_REV").to_string(),
         grading_version: forge_manifest::GRADING_VERSION,
         kind: args.kind.clone(),
         grid_size: plan.n,

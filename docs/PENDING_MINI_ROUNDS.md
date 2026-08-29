@@ -63,8 +63,12 @@ repository:
   `Puzzle::custom`, so an invented layout solves like a known one.
 - **B3 rectangular regions** — built: `Region` carries `rows`/`cols`
   with `Region::square` for the six known kinds.
-- **B4 node budget** and **B5 git revision in `--version`** remain open;
-  neither blocks anything today.
+- **B5 git revision in `--version`** — built (2026-08-29): a build
+  script stamps the short hash, `-dirty` when the tree had uncommitted
+  changes, `unknown` outside a checkout. Batch manifests record it, so a
+  batch can always be traced to the build that wrote it.
+- **B4 node budget** remains open; it blocks nothing today except the
+  cancellation half of M26 (see Q5).
 
 ## Q3 · Phase 2's three mandatory items were never discussed
 

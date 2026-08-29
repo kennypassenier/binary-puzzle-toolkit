@@ -299,3 +299,27 @@ fn k29_forge_rejects_an_unusable_type_with_a_remedy() {
     let err = String::from_utf8_lossy(&out.stderr);
     assert!(err.contains("4x6x6"), "must list the valid tags: {err}");
 }
+
+/// B5: a batch manifest names the build that wrote it, so the revision
+/// has to be in the binary for the manifest to be able to record it.
+#[test]
+fn b5_version_carries_the_git_revision() {
+    let out = std::process::Command::new(env!("CARGO_BIN_EXE_bpt"))
+        .arg("--version")
+        .output()
+        .expect("bpt runs");
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert!(text.contains(env!("CARGO_PKG_VERSION")), "{text}");
+    assert!(
+        text.contains('(') && text.contains(')'),
+        "the revision belongs in --version: {text}"
+    );
+    // Outside a git checkout the stamp reads "unknown"; inside one it is
+    // a real short hash. Both are acceptable, an empty stamp is not.
+    let rev = text
+        .split_once('(')
+        .and_then(|(_, rest)| rest.split_once(')'))
+        .map(|(rev, _)| rev)
+        .expect("a parenthesised revision");
+    assert!(!rev.trim().is_empty(), "the revision must not be blank");
+}
