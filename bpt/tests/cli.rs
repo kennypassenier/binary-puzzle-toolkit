@@ -364,7 +364,40 @@ fn m25_inspect_names_what_it_could_not_find() {
     assert_eq!(out.status.code(), Some(2));
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert!(
-        stderr.contains("neither a geometry file nor a built-in"),
-        "and says what the built-ins are: {stderr}"
+        stderr.contains("not a geometry file, a built-in type, or a composed"),
+        "and says all three ways a geometry can be given: {stderr}"
     );
+}
+
+/// M25/S6b: inspect resolves a composed name the same way forge does.
+/// Found in the Phase 7 sweep: `forge --kind 4x6x6in16` worked while
+/// `inspect 4x6x6in16` said the name did not exist.
+#[test]
+fn m25_inspect_understands_a_composed_name() {
+    let out = std::process::Command::new(env!("CARGO_BIN_EXE_bpt"))
+        .args(["inspect", "4x6x6in16"])
+        .output()
+        .expect("bpt runs");
+    assert_eq!(
+        out.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert!(text.contains("16x16"), "{text}");
+    assert!(
+        text.contains("6 region"),
+        "the 12x12, four 6x6 and the whole grid: {text}"
+    );
+
+    // And a name outside the grammar still fails, naming all three ways
+    // a geometry can be given.
+    let bad = std::process::Command::new(env!("CARGO_BIN_EXE_bpt"))
+        .args(["inspect", "4x6x8"])
+        .output()
+        .expect("bpt runs");
+    assert_eq!(bad.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&bad.stderr);
+    assert!(stderr.contains("composed name"), "{stderr}");
 }

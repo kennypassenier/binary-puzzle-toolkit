@@ -97,6 +97,22 @@ impl RegionSpec {
     }
 }
 
+impl From<Region> for RegionSpec {
+    fn from(r: Region) -> Self {
+        RegionSpec {
+            row: r.row,
+            col: r.col,
+            rows: r.rows,
+            cols: r.cols,
+            rules: RuleSetSpec {
+                balance: r.rules.balance,
+                no_triples: r.rules.no_triples,
+                unique_lines: r.rules.unique_lines,
+            },
+        }
+    }
+}
+
 impl From<RegionSpec> for Region {
     fn from(s: RegionSpec) -> Self {
         Region {
@@ -154,6 +170,17 @@ impl Geometry {
     /// The regions as the solver and the generator both understand them.
     pub fn to_regions(&self) -> Vec<Region> {
         self.regions.iter().copied().map(Region::from).collect()
+    }
+
+    /// Build from regions the core already resolved, e.g. from a
+    /// composed tag. Skips validation on purpose: these regions were
+    /// derived from a name the grammar accepted, not typed by hand.
+    pub fn composed(tag: String, size: usize, regions: &[Region]) -> Self {
+        Geometry {
+            tag: Some(tag),
+            size,
+            regions: regions.iter().copied().map(RegionSpec::from).collect(),
+        }
     }
 
     /// A plain n×n puzzle: one region, the whole grid.

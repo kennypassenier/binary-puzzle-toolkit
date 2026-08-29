@@ -795,6 +795,21 @@ fn emitted_tag(args: &ForgeArgs) -> String {
 /// mysterious. Takes a file or a built-in name, because someone checking
 /// their own file usually wants to compare it against a known one.
 fn run_inspect(args: InspectArgs) -> Result<u8> {
+    // A composed name describes its own layout, so inspect resolves it
+    // the same way forge does. Without this, `forge --kind 4x6x6in16`
+    // worked while `inspect 4x6x6in16` said the name did not exist.
+    if bpt_forge::geometry::builtin(&args.geometry).is_none()
+        && let Some(composed) = compose_from_tag(&args.geometry)
+    {
+        let geometry = bpt_forge::geometry::Geometry::composed(
+            args.geometry.clone(),
+            composed.size,
+            &composed.regions,
+        );
+        print!("{}", bpt_forge::inspect::render(&geometry));
+        std::io::stdout().flush().ok();
+        return Ok(EXIT_OK);
+    }
     let geometry = match bpt_forge::geometry::builtin(&args.geometry) {
         Some(result) => result
             .map_err(|e| anyhow::anyhow!("the built-in {} is not usable: {e}", args.geometry))?,
@@ -802,8 +817,9 @@ fn run_inspect(args: InspectArgs) -> Result<u8> {
             let path = Path::new(&args.geometry);
             if !path.exists() {
                 bail!(
-                    "{:?} is neither a geometry file nor a built-in type — \
-                     the built-ins are 4x6x6, 4x8x8, 9x6x6, 8in14, 6in10in14",
+                    "{:?} is not a geometry file, a built-in type, or a composed \
+                     name — the built-ins are 4x6x6, 4x8x8, 9x6x6, 8in14, \
+                     6in10in14, and a composed name looks like 4x6x6in16",
                     args.geometry
                 );
             }
