@@ -73,6 +73,27 @@ AND remedy (standing rule 11).
 **Tests:** parse→serialize round-trip property test; one test per
 malformed-input class asserting the remedy message.
 
+> **Amendment 2026-08-29 (Q3b + Q6).** The line format is the contract
+> between the two halves, and it is now pinned as such. A tag is read as
+> a *description*: `<n>x<a>x<a>` is n blocks of a×a laid out √n by √n,
+> `<term>in<size>` centres that term in a larger square, and the two
+> compose (`4x6x6in16`). So a composite type needs no entry anywhere —
+> the name carries its layout — while a name outside the grammar is
+> refused rather than read as a plain grid, which would answer a
+> different puzzle under the same line.
+>
+> A type whose *placement* is a choice rather than a consequence of its
+> name — two blocks side by side, two that overlap — cannot be described
+> this way and travels as a geometry file through `--geometry` instead.
+>
+> **Tests:** `bpt-core/tests/fixtures/format/` holds the vectors — the
+> five published tags, three composed names and an untagged grid, each
+> asserted to round-trip byte for byte; twelve invalid lines asserted to
+> fail with a named error class, including four names that sit close to
+> the grammar and must still be refused (`5x6x6`, `4x6x8`, `12`,
+> `6in9`). `bpt-core/tests/specials.rs` proves the grammar reproduces
+> every published type's regions exactly.
+
 ### K8 · Single puzzle via CLI argument
 `binsolve "1..0.0..."`.
 **Tests:** E2E against the real binary asserting stdout.
