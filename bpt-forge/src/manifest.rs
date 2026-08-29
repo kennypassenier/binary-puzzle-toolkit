@@ -64,6 +64,13 @@ pub struct Entry {
     /// catch a directory and a manifest drifting apart, not to resist
     /// an attacker.
     pub digest: String,
+    /// How often the uniqueness search ran out of budget while carving
+    /// this puzzle (B4). Above zero means it keeps clues that a longer
+    /// search might have removed — still a valid, uniquely solvable
+    /// puzzle, just not a minimal one. Recorded so that is never a
+    /// silent difference.
+    #[serde(default)]
+    pub budget_hits: usize,
 }
 
 /// The grading ladder's version. Bump it whenever a change to the
@@ -121,6 +128,7 @@ mod tests {
                 level: Level::L2,
                 clues: 14,
                 digest: digest("..1.0."),
+                budget_hits: 0,
             }],
         }
     }

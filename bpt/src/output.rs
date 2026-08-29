@@ -24,6 +24,11 @@ pub fn canonical_line(outcome: &SolveOutcome, puzzle: &Puzzle, original: &str) -
         SolveOutcome::MultipleSolutions { .. } => marker_line("multiple", original),
         SolveOutcome::Contradiction { .. } => marker_line("contradiction", original),
         SolveOutcome::Stuck { .. } => marker_line("stuck", original),
+        // Only the generator sets a budget today, so the CLI never
+        // produces this. It still gets its own marker rather than being
+        // folded into "stuck": stuck is a claim about the puzzle,
+        // exhausted is a claim about the search that was allowed.
+        SolveOutcome::BudgetExhausted { .. } => marker_line("budget", original),
     }
 }
 
@@ -85,6 +90,12 @@ pub fn terminal_display(
         }
         SolveOutcome::Contradiction { reason } => {
             out.push_str(&format!("no solution: {reason}\n"));
+        }
+        SolveOutcome::BudgetExhausted { grid, nodes } => {
+            out.push_str(&pretty_grid(grid));
+            out.push_str(&format!(
+                "gave up after {nodes} search steps — the puzzle may still be solvable\n"
+            ));
         }
         SolveOutcome::Stuck { grid, filled } => {
             out.push_str(&pretty_grid(grid));

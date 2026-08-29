@@ -222,16 +222,60 @@ impl fmt::Display for ContradictionReason {
 /// The AR6 outcome. `Stuck` only occurs in StrategiesOnly mode.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SolveOutcome {
-    Solved { solution: Grid, stats: SolveStats },
-    MultipleSolutions { first: Grid, second: Grid },
-    Contradiction { reason: ContradictionReason },
-    Stuck { grid: Grid, filled: usize },
+    Solved {
+        solution: Grid,
+        stats: SolveStats,
+    },
+    MultipleSolutions {
+        first: Grid,
+        second: Grid,
+    },
+    Contradiction {
+        reason: ContradictionReason,
+    },
+    Stuck {
+        grid: Grid,
+        filled: usize,
+    },
+    /// B4/AR26: the search hit its node budget before it could answer.
+    ///
+    /// Deliberately not "no solution" and not "stuck": those are claims
+    /// about the puzzle, and this is a statement about the search. A
+    /// caller that treats it as either will be wrong — the generator
+    /// keeps a clue it might have removed, which costs minimality, and
+    /// that is the safe direction.
+    BudgetExhausted {
+        grid: Grid,
+        nodes: u64,
+    },
 }
 
 /// Solve a puzzle (K4/K5/M1). Ladder first; if needed and allowed, DFS
 /// with cheap-tier propagation. Deterministic throughout (AR13).
 pub fn solve(puzzle: &Puzzle, mode: SolveMode, observer: &mut dyn Observer) -> SolveOutcome {
     solve_with(puzzle, mode, observer, &mut DeterministicChoice)
+}
+
+/// Solve, giving up after `budget` search nodes (B4).
+///
+/// The budget counts nodes, not seconds. AR26 requires it: a wall-clock
+/// bound would fire at different points on a fast and a slow machine,
+/// and on sixteen parallel workers, so the same seed would stop
+/// producing the same puzzle. A node budget is part of the input — the
+/// same puzzle, the same budget, the same answer, everywhere.
+pub fn solve_within(
+    puzzle: &Puzzle,
+    mode: SolveMode,
+    observer: &mut dyn Observer,
+    budget: u64,
+) -> SolveOutcome {
+    solve_bounded(
+        puzzle,
+        mode,
+        observer,
+        &mut DeterministicChoice,
+        Some(budget),
+    )
 }
 
 /// Solve while choosing branches through `oracle`. The generator uses
@@ -242,6 +286,18 @@ pub fn solve_with(
     mode: SolveMode,
     observer: &mut dyn Observer,
     oracle: &mut dyn ChoiceOracle,
+) -> SolveOutcome {
+    solve_bounded(puzzle, mode, observer, oracle, None)
+}
+
+/// The one implementation the other three entry points delegate to.
+/// `budget` of `None` searches until the question is answered.
+pub fn solve_bounded(
+    puzzle: &Puzzle,
+    mode: SolveMode,
+    observer: &mut dyn Observer,
+    oracle: &mut dyn ChoiceOracle,
+    budget: Option<u64>,
 ) -> SolveOutcome {
     let regions = puzzle.regions();
     let invalid = validate_partial(&puzzle.givens, &regions);
@@ -303,8 +359,20 @@ pub fn solve_with(
         stats: &mut stats,
         solutions: Vec::new(),
         want,
+        budget,
+        nodes: 0,
+        exhausted: false,
     };
-    dfs(grid, 0, &mut ctx);
+    dfs(grid.clone(), 0, &mut ctx);
+    // Checked before the solutions are read: with the budget spent the
+    // search never finished, so "one solution" would not mean unique and
+    // "none" would not mean unsolvable.
+    if ctx.exhausted {
+        return SolveOutcome::BudgetExhausted {
+            grid,
+            nodes: ctx.nodes,
+        };
+    }
     let mut solutions = ctx.solutions;
     match solutions.len() {
         0 => SolveOutcome::Contradiction {
@@ -349,6 +417,9 @@ struct SearchCtx<'a> {
     stats: &'a mut SolveStats,
     solutions: Vec<Grid>,
     want: usize,
+    budget: Option<u64>,
+    nodes: u64,
+    exhausted: bool,
 }
 
 impl SearchCtx<'_> {
@@ -360,6 +431,16 @@ impl SearchCtx<'_> {
 /// Depth-first search with cheap-tier propagation at every node (AR5).
 /// Returns true when enough solutions were found to stop.
 fn dfs(mut grid: Grid, depth: usize, ctx: &mut SearchCtx<'_>) -> bool {
+    // One node per call, counted before any work: a budget of zero must
+    // stop immediately rather than doing one node's worth first.
+    ctx.nodes += 1;
+    if ctx.budget.is_some_and(|budget| ctx.nodes > budget) {
+        ctx.exhausted = true;
+        // `true` unwinds the whole search at once. The caller reads
+        // `exhausted` before it reads the solutions, so this cannot be
+        // mistaken for having found what it was looking for.
+        return true;
+    }
     // Propagate with the cheap stage only (tiers 1-2); deductions still
     // reach the observer so traces show the search's reasoning.
     let before = grid.filled_count();

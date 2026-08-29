@@ -9,11 +9,11 @@
 //! and then report a level unreachable that in fact is not. Keeping a
 //! ceiling converges in one pass and never restarts.
 
-use crate::grade::{Level, level};
+use crate::grade::{Level, level_of_solvable};
 use bpt_core::event::NullObserver;
 use bpt_core::grid::{Cell, Grid};
 use bpt_core::region::{Puzzle, Region};
-use bpt_core::search::{SolveMode, SolveOutcome, solve};
+use bpt_core::search::{SolveMode, SolveOutcome, solve, solve_within};
 use rand::seq::SliceRandom;
 use rand_chacha::ChaCha8Rng;
 
@@ -25,7 +25,39 @@ pub struct Carved {
     pub level: Level,
     /// Cells still filled in the puzzle.
     pub clues: usize,
+    /// How many removals were refused because the uniqueness question
+    /// ran out of budget rather than being answered (B4).
+    ///
+    /// Recorded rather than swallowed: a puzzle with hits carries clues
+    /// it might not have needed, and nobody should have to guess whether
+    /// that happened. Zero is the normal case.
+    pub budget_hits: usize,
 }
+
+/// B4/AR26: how many search nodes one uniqueness question may cost.
+///
+/// Every removal asks "does the other value lead anywhere?", and on the
+/// largest grids that question sometimes has no cheap answer — measured,
+/// a single 18x18 ran for over eighty minutes without finishing. The
+/// budget makes the cost of a carve bounded by construction.
+///
+/// The number was chosen by measuring what it costs. Against a budget
+/// of fifty million — effectively unbounded — 200 000 changes almost
+/// nothing:
+///
+/// | geometry | fired on | total hits | extra clues |
+/// |---|---|---|---|
+/// | 12x12 | 0 of 20 puzzles | 0 | 0 |
+/// | 14x14 | 0 of 10 | 0 | 0 |
+/// | 8in14 | 1 of 10 | 4 | 1 |
+/// | 16x16 | 2 of 3 | 3 | 0 |
+///
+/// So it is invisible below 16x16, and where it does fire it costs at
+/// most a single clue — while taking 8in14's p95 from 41 s to 18 s and
+/// turning 18x18 seeds that never finished into ones that take under
+/// two minutes. `Carved::budget_hits` records every firing, so a puzzle
+/// that paid this price says so.
+pub const UNIQUENESS_BUDGET: u64 = 200_000;
 
 /// How clues may be laid out (M24).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -69,6 +101,8 @@ pub struct Options {
     /// Stop once this many clues remain. `None` carves as far as it can,
     /// which is the default and what a batch wants.
     pub target_clues: Option<usize>,
+    /// B4: search nodes one uniqueness question may cost.
+    pub budget: u64,
 }
 
 impl Options {
@@ -77,6 +111,7 @@ impl Options {
             ceiling,
             symmetry: Symmetry::None,
             target_clues: None,
+            budget: UNIQUENESS_BUDGET,
         }
     }
 }
@@ -107,6 +142,7 @@ pub fn carve_with(
     let mut order: Vec<(usize, usize)> = (0..n).flat_map(|r| (0..n).map(move |c| (r, c))).collect();
     order.shuffle(rng);
 
+    let mut budget_hits = 0usize;
     for (row, col) in order {
         if let Some(target) = options.target_clues {
             // Asking for a clue count means asking to stop, not to keep
@@ -128,7 +164,11 @@ pub fn carve_with(
         // solvable by construction and L4 is the top of the scale — so
         // the ladder is not run at all in the default case. Below L4 it
         // decides, and it is the only thing that has to.
-        let acceptable = still_unique(&working, regions, &group, &removed)
+        let verdict = still_unique(&working, regions, &group, &removed, options.budget);
+        if verdict == Uniqueness::Unknown {
+            budget_hits += 1;
+        }
+        let acceptable = verdict == Uniqueness::Holds
             && (options.ceiling == Level::L4
                 || fits_ceiling(
                     &Puzzle::custom(working.clone(), regions.to_vec()),
@@ -144,12 +184,13 @@ pub fn carve_with(
     }
 
     let puzzle = Puzzle::custom(working.clone(), regions.to_vec());
-    let measured = level(&puzzle).expect("a carved puzzle is solvable by construction");
+    let measured = level_of_solvable(&puzzle);
     Carved {
         clues: working.filled_count(),
         puzzle: working,
         solution: solution.clone(),
         level: measured,
+        budget_hits,
     }
 }
 
@@ -161,22 +202,35 @@ pub fn carve_with(
 /// whose value is in question, so a symmetric carve pays for a full
 /// uniqueness proof per group. That is the cost of symmetry, and M24
 /// says so.
+/// What the uniqueness question answered. `Unknown` is not a third kind
+/// of "no": the removal is refused either way, but only `Unknown` means
+/// nothing was actually proved.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Uniqueness {
+    Holds,
+    Broken,
+    Unknown,
+}
+
 fn still_unique(
     working: &Grid,
     regions: &[Region],
     group: &[(usize, usize)],
     removed: &[Cell],
-) -> bool {
+    budget: u64,
+) -> Uniqueness {
     match group {
-        [(row, col)] => still_unique_without(working, regions, *row, *col, removed[0]),
-        _ => matches!(
-            solve(
-                &Puzzle::custom(working.clone(), regions.to_vec()),
-                SolveMode::ProveUniqueness,
-                &mut NullObserver,
-            ),
-            SolveOutcome::Solved { .. }
-        ),
+        [(row, col)] => still_unique_without(working, regions, *row, *col, removed[0], budget),
+        _ => match solve_within(
+            &Puzzle::custom(working.clone(), regions.to_vec()),
+            SolveMode::ProveUniqueness,
+            &mut NullObserver,
+            budget,
+        ) {
+            SolveOutcome::Solved { .. } => Uniqueness::Holds,
+            SolveOutcome::BudgetExhausted { .. } => Uniqueness::Unknown,
+            _ => Uniqueness::Broken,
+        },
     }
 }
 
@@ -238,24 +292,32 @@ fn still_unique_without(
     row: usize,
     col: usize,
     was: Cell,
-) -> bool {
+    budget: u64,
+) -> Uniqueness {
     let opposite = match was {
         Cell::Zero => Cell::One,
         Cell::One => Cell::Zero,
         // Only a filled cell is ever removed, so this cannot arise; if it
         // ever did, refusing the removal is the safe answer.
-        Cell::Empty => return false,
+        Cell::Empty => return Uniqueness::Broken,
     };
     let mut probe = working.clone();
     probe.set(row, col, opposite);
-    !matches!(
-        solve(
-            &Puzzle::custom(probe, regions.to_vec()),
-            SolveMode::FirstSolution,
-            &mut NullObserver,
-        ),
-        SolveOutcome::Solved { .. }
-    )
+    match solve_within(
+        &Puzzle::custom(probe, regions.to_vec()),
+        SolveMode::FirstSolution,
+        &mut NullObserver,
+        budget,
+    ) {
+        // Refuted: the other value leads nowhere, so uniqueness survives.
+        SolveOutcome::Contradiction { .. } => Uniqueness::Holds,
+        // The other value works too, so the removal cost uniqueness.
+        SolveOutcome::Solved { .. } | SolveOutcome::MultipleSolutions { .. } => Uniqueness::Broken,
+        // B4: the search ran out of budget, so nothing was proved. The
+        // clue goes back — the safe direction — and the caller counts it.
+        SolveOutcome::BudgetExhausted { .. } => Uniqueness::Unknown,
+        SolveOutcome::Stuck { .. } => Uniqueness::Broken,
+    }
 }
 
 #[cfg(test)]
@@ -417,6 +479,56 @@ mod tests {
         let out = carved_with(4, options);
         assert!(out.clues > 1, "one clue cannot determine an 8x8");
         assert_eq!(out.clues, carved_with(4, Options::new(Level::L4)).clues);
+    }
+
+    #[test]
+    fn b4_a_carve_reports_whether_its_budget_ever_ran_out() {
+        // On an 8x8 nothing is expensive enough to exhaust the budget,
+        // so the honest report is zero. The value matters because it is
+        // the difference between "minimal" and "minimal as far as we
+        // were willing to look".
+        let out = carved_with(4, Options::new(Level::L4));
+        assert_eq!(out.budget_hits, 0);
+    }
+
+    #[test]
+    fn b4_a_tiny_budget_keeps_more_clues_and_says_so() {
+        // Forcing the budget to zero blocks the search but not the
+        // deductions: the strategy ladder still refutes a wrong value
+        // outright, without spending a single search node. That is why a
+        // budget of zero still carves — measured on an 8x8, the ladder
+        // alone accounts for most removals — and it is the reason the
+        // real budget is invisible on small grids.
+        let mut starved = Options::new(Level::L4);
+        starved.budget = 0;
+        let a = carved_with(4, starved);
+        let b = carved_with(4, Options::new(Level::L4));
+
+        assert!(
+            a.budget_hits > 0,
+            "a starved carve must report its refusals"
+        );
+        assert_eq!(b.budget_hits, 0, "the real budget is not reached on an 8x8");
+        assert!(
+            a.clues > b.clues,
+            "a starved carve keeps more clues: {} against {}",
+            a.clues,
+            b.clues
+        );
+        // What it produces is still a real puzzle, not a truncated grid.
+        assert!(a.clues < 64);
+    }
+
+    #[test]
+    fn b4_the_budget_is_deterministic_not_wall_clock() {
+        // AR26: the same puzzle and the same budget give the same answer
+        // however fast the machine is. Running the identical carve twice
+        // must agree on the puzzle AND on the number of hits.
+        let mut options = Options::new(Level::L4);
+        options.budget = 500;
+        let a = carved_with(7, options);
+        let b = carved_with(7, options);
+        assert_eq!(a, b);
     }
 
     #[test]

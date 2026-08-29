@@ -19,6 +19,8 @@ pub struct Plan {
     /// the ceiling allows, with no symmetry.
     pub symmetry: Symmetry,
     pub target_clues: Option<usize>,
+    /// B4: search nodes one uniqueness question may cost (AR26).
+    pub budget: u64,
     pub seed: u64,
     pub count: u64,
     /// Give up on one puzzle after this many attempts. Retries exist to
@@ -34,6 +36,7 @@ impl Plan {
             ceiling: self.ceiling,
             symmetry: self.symmetry,
             target_clues: self.target_clues,
+            budget: self.budget,
         }
     }
 
@@ -44,6 +47,7 @@ impl Plan {
             ceiling,
             symmetry: Symmetry::None,
             target_clues: None,
+            budget: crate::carve::UNIQUENESS_BUDGET,
             seed,
             count,
             attempts_per_puzzle: 8,

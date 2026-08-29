@@ -136,6 +136,19 @@ without it the finest interruptible unit is one `solve()` call, worst
 measured 15.9 s, so AR29's "nothing hangs" guarantee and M26's
 responsive Ctrl-C are undeliverable.
 
+**Amendment 2026-08-29 (B4 built, ratified by Kenny).** The prediction
+held, and understated the case. Generation at 18x18 did not merely take
+long: two of five measured seeds never finished at all, one of them
+still running after eighty minutes. `solve_within` now bounds a search
+by node count, and the carve loop treats an exhausted budget as "not
+proved" — the clue goes back and the refusal is counted in
+`Carved::budget_hits` and in every manifest entry. The budget is 200 000
+nodes, chosen by measurement: it changes nothing below 16x16 and costs
+at most one clue where it does fire. Wall-clock was never an option
+here for the reason stated above; a node count is part of the input, so
+the same puzzle and the same budget give the same answer on any
+machine.
+
 ### AR27 · Validation: two artifacts, pinned binary
 `--check` (verified, `bpt/src/main.rs:217`) validates a *supplied*
 solution and never proves uniqueness — K31's sabotage test would pass

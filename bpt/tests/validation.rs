@@ -41,10 +41,6 @@ const GEOMETRIES: [&str; 13] = [
     "6in10in14",
 ];
 
-/// Sizes whose generation can run without terminating, so no automated
-/// job may include them. See SWEEP for the measurements.
-const UNBOUNDED: [&str; 2] = ["18", "20"];
-
 /// The subset a commit can afford. Carving cost climbs steeply with the
 /// grid: measured in release, five puzzles take 0.2 s at 12x12, 3.8 s at
 /// 14x14 and 11.2 s at 16x16, and these tests run against the debug
@@ -159,22 +155,25 @@ fn k31_an_ambiguous_puzzle_is_caught() {
 
 /// How many puzzles D1's sweep validates per geometry.
 ///
-/// D1 asks for 100 everywhere. Two things stand in the way. Cost: one
-/// 16x16 takes seconds, so a hundred is minutes, not hours — workable
-/// but not free. And termination: at 18x18 and 20x20 the carve has no
-/// bound at all. Measured, one puzzle per seed, single-threaded: seed 77
-/// finished in 2 s, seed 31 in 11 s, and seed 2026 was still running
-/// after eighty minutes. A sweep that can hang is worse than one that
-/// says what it does not cover, so those two sizes are left out until
-/// B4's node budget gives the carve a ceiling.
-/// ↳ B4 = the deterministic node budget mini-round, deferred by Kenny.
-const SWEEP: [(&str, u64); 11] = [
+/// D1 asks for 100 everywhere, and cost is what stands in the way: one
+/// 16x16 takes seconds, one 20x20 a minute or two, so a hundred of those
+/// would run for most of a day.
+///
+/// 18x18 and 20x20 were skipped entirely for a while, because the carve
+/// could run without terminating — seed 2026 was still going after
+/// eighty minutes. B4's node budget fixed that: every size now finishes,
+/// so they are back in the sweep at a count their cost allows.
+/// ↳ B4 = the deterministic node budget: a uniqueness question may cost
+/// a fixed number of search steps, after which the clue is kept.
+const SWEEP: [(&str, u64); 13] = [
     ("6", 100),
     ("8", 100),
     ("10", 100),
     ("12", 100),
     ("14", 100),
     ("16", 10),
+    ("18", 5),
+    ("20", 3),
     ("4x6x6", 100),
     ("4x8x8", 10),
     ("9x6x6", 5),
@@ -209,16 +208,11 @@ fn d1_every_geometry_validates_in_bulk() {
             reduced.join(", ")
         );
     }
-    // Every geometry the toolkit claims is either swept or named as a
-    // deliberate omission. Silence about a gap is the thing to avoid.
+    // Every geometry the toolkit claims must appear in the sweep.
     for kind in GEOMETRIES {
         assert!(
-            SWEEP.iter().any(|(k, _)| *k == kind) || UNBOUNDED.contains(&kind),
-            "{kind} is neither swept nor listed as unbounded"
+            SWEEP.iter().any(|(k, _)| *k == kind),
+            "{kind} is not in D1's sweep"
         );
     }
-    println!(
-        "D1: not swept at all, because their carve has no upper bound: {}",
-        UNBOUNDED.join(", ")
-    );
 }

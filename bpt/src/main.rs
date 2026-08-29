@@ -603,6 +603,7 @@ fn write_batch(
             level: carved.level,
             clues: carved.clues,
             digest: forge_manifest::digest(&line),
+            budget_hits: carved.budget_hits,
         });
     }
     atomic::write(&dir.join(FLAT_FILE), &flat)?;

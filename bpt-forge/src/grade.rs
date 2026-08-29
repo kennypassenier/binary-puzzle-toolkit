@@ -41,6 +41,24 @@ impl Level {
     }
 }
 
+/// Measure the level of a puzzle already known to be solvable.
+///
+/// `level` runs a full search to separate "needs guessing" from "has no
+/// solution", and on a large grid that search is exactly the unbounded
+/// one B4 exists to bound. A caller that carved the puzzle out of a
+/// solution does not need the distinction — the solution still solves
+/// it — so the ladder alone decides, and a stall means L4.
+pub fn level_of_solvable(puzzle: &Puzzle) -> Level {
+    match solve(puzzle, SolveMode::StrategiesOnly, &mut NullObserver) {
+        SolveOutcome::Solved { stats, .. } => match stats.max_tier {
+            0..=2 => Level::L1,
+            3 => Level::L2,
+            _ => Level::L3,
+        },
+        _ => Level::L4,
+    }
+}
+
 /// Measure a puzzle's level, or None when it has no solution at all.
 ///
 /// Two solves at most: the strategies-only run answers L1..L3 directly,

@@ -70,7 +70,7 @@ repository:
 - **B4 node budget** remains open; it blocks nothing today except the
   cancellation half of M26 (see Q5).
 
-## Q3 · Phase 2's three mandatory items were never discussed
+## Q3 · Phase 2's three mandatory items — DECIDED 2026-08-29
 
 **Area quarantined:** none — these are additions, nothing built on them.
 
@@ -86,9 +86,29 @@ binsolve's feature list was frozen, so they were never put to Kenny:
 3. **Backup & restore** — what IS the state (the corpus? nothing else?),
    and does it need a backup at all.
 
-Kenny already scheduled these for right after the L9 gate.
+**Decided 2026-08-29.**
+1. **Update & distribution** — `git pull` + `cargo build --release`. Kenny
+   is the only user and the repository is on his own machine; anything
+   heavier is machinery for a problem he does not have. It becomes a
+   numbered step in the operations runbook (Phase 8).
+2. **Ecosystem integration** — the shared line format is pinned as a
+   feature with regression vectors: a handful of fixed example lines with
+   their expected interpretation, so a change to the format announces
+   itself instead of breaking old corpus files.
+3. **Backup & restore** — the repository is the backup. The scraped
+   corpus lives in it, generated batches are reproducible from their
+   manifest, and M30's drill proves that from a fresh clone in CI.
 
-## Q4 · A code comment argues something that measurement contradicts
+**On item 2, what already exists.** `bpt-core/tests/format_vectors.rs`
+already pins the format against files: eight valid lines covering all
+five published tags, each asserted to round-trip byte for byte, and
+seven invalid ones asserted to fail with a specific error class. So the
+mechanism is built; what is missing is that it was never *recorded* as a
+feature, which is what this item asked for. That write-up waits on Q6:
+if invented types gain a tag, the vectors need a case for it, and it
+would be silly to freeze the feature text the day before.
+
+## Q4 · A code comment argues something measurement contradicts — DECIDED 2026-08-29
 
 **Area quarantined:** the comment in `bpt-core/src/parse.rs` that
 justifies the integer-sqrt guard.
@@ -104,8 +124,16 @@ its justification is an argument that was never executed.
 is defensive, cheap, and makes the intent explicit) · drop the guard and
 rely on the naive conversion · leave both as they are.
 
-This is a Phase-7 "reasoned vs measured" finding; the fix is a comment,
-not behaviour, so it is queued rather than applied mid-audit.
+**Decided 2026-08-29: reword the comment.** The guard stays — it is
+cheap and makes the intent explicit — but its stated reason describes a
+danger that does not exist for this input, and a comment that misleads
+the next reader is worse than no comment.
+
+**Already in the code.** Checking before changing anything: the comment
+at `bpt-core/src/parse.rs` now reads "Measured over every perfect square
+up to 4096 the naive conversion is never wrong, so this is defensive
+rather than load bearing". That is exactly what was decided, so the
+decision needed no edit — only this note saying so.
 
 ## Q5 · Ctrl-C on a long batch — withdrawn, the decision was already made
 
@@ -150,7 +178,7 @@ code changes but gives the format a filesystem dependency · make the
 prefix self-describing so the line carries its own regions · leave
 `--geometry` as the only way, and never tag invented types.
 
-## Q7 · Generation has no upper bound on the largest grids
+## Q7 · Generation has no upper bound on the largest grids — DECIDED 2026-08-29
 
 **Area quarantined:** none — this is a measurement. Nothing was built on
 it, and nothing was quietly weakened because of it.
@@ -231,9 +259,43 @@ phenomenon.
   never reads as full coverage.
 - G8's "any special type under 30 s" stays unmet at 9x6x6.
 
-**Options:** build B4's node budget now and let the carve report
-"budget exhausted" instead of running forever, which restores 18x18 and
-20x20 to the baseline and the sweep · accept the unbounded worst case,
-drop G8's figures as superseded by AR25's baseline, and document the
-largest sizes as best-effort · cap the generator's supported sizes at
-16x16 and say so in the scope.
+**Decided 2026-08-29: build B4's node budget now.** The carve reports
+"budget exhausted" instead of running forever, which is the only option
+that keeps 18x18 and 20x20 usable rather than defining them away — and
+AR26 had already said this was the prerequisite.
+
+**Built the same day.** `SolveOutcome::BudgetExhausted` is a statement
+about the search, deliberately distinct from "no solution" and from
+"stuck", which are statements about the puzzle. A carve that cannot get
+an answer within its budget puts the clue back — the safe direction —
+and counts it, so `Carved::budget_hits` and every manifest entry record
+where a puzzle paid that price.
+
+A second unbounded path turned up while building it: after carving,
+measuring the level ran a full search purely to separate "needs
+guessing" from "has no solution". For a puzzle just carved out of a
+solution that distinction is already settled, so the ladder alone now
+decides.
+
+Measured, one 18x18 per seed, single-threaded, before and after:
+
+| seed | 31 | 77 | 555 | 2026 | 909 |
+|---|---|---|---|---|---|
+| before | 11 s | 2 s | 84 s | >80 min | not in 180 s |
+| after | 10 s | 2 s | 36 s | 87 s | 53 s |
+
+20x20, which never finished a single measurement, now takes 46 s, 159 s
+and 182 s for its three baseline seeds.
+
+**What B4 does and does not promise.** It bounds one uniqueness
+question, not a whole carve, and a carve asks that question once per
+cell. Termination is therefore guaranteed and the bound is loose:
+measured worst case, a 16x16 that took 879 s with only two budget hits
+— nearly every one of its searches was expensive but stayed under the
+limit, so the budget barely engaged. "Never finishes" became "finishes,
+sometimes slowly", which is the promise AR26 asked for; making it fast
+as well is a separate question about the size of the budget. What the budget costs, measured against an
+effectively unbounded 50 million: nothing at 12x12 (0 of 20 puzzles) and
+14x14 (0 of 10); one extra clue at 8in14 (1 of 10); no extra clues at
+16x16 (2 of 3). 18x18 and 20x20 are back in the baseline and in D1's
+sweep.
