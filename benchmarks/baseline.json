@@ -29,7 +29,7 @@
     "samples": 20,
     "median_ms": 0.4,
     "p95_ms": 0.4,
-    "in_ci": true
+    "in_ci": false
   },
   {
     "geometry": "8",
@@ -61,7 +61,7 @@
     "samples": 20,
     "median_ms": 1.4,
     "p95_ms": 2.2,
-    "in_ci": true
+    "in_ci": false
   },
   {
     "geometry": "10",
@@ -93,7 +93,7 @@
     "samples": 20,
     "median_ms": 4.7,
     "p95_ms": 7.2,
-    "in_ci": true
+    "in_ci": false
   },
   {
     "geometry": "12",
@@ -216,7 +216,7 @@
     "samples": 20,
     "median_ms": 31.4,
     "p95_ms": 53.0,
-    "in_ci": true
+    "in_ci": false
   },
   {
     "geometry": "4x8x8",

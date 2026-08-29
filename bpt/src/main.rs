@@ -62,6 +62,16 @@ enum Command {
     Watch(WatchArgs),
     /// Generate puzzles with a proven-unique solution
     Forge(ForgeArgs),
+    /// Show what a geometry file describes, and whether it is valid
+    Inspect(InspectArgs),
+}
+
+/// M25: the command the help text has promised since the merge.
+#[derive(Parser, Debug)]
+struct InspectArgs {
+    /// A geometry file, or the name of a built-in type such as 4x8x8
+    #[arg(value_name = "GEOMETRY")]
+    geometry: String,
 }
 
 #[derive(Parser, Debug)]
@@ -192,6 +202,7 @@ fn dispatch() -> Result<u8> {
         Command::Solve(args) => run(args),
         Command::Watch(args) => run_watch(args),
         Command::Forge(args) => run_forge(args),
+        Command::Inspect(args) => run_inspect(args),
     }
 }
 
@@ -757,6 +768,30 @@ fn emitted_tag(args: &ForgeArgs) -> String {
         Some(_) => String::new(),
         None => tag_for(&args.kind),
     }
+}
+
+/// M25: render a geometry so a mistyped origin is visible instead of
+/// mysterious. Takes a file or a built-in name, because someone checking
+/// their own file usually wants to compare it against a known one.
+fn run_inspect(args: InspectArgs) -> Result<u8> {
+    let geometry = match bpt_forge::geometry::builtin(&args.geometry) {
+        Some(result) => result
+            .map_err(|e| anyhow::anyhow!("the built-in {} is not usable: {e}", args.geometry))?,
+        None => {
+            let path = Path::new(&args.geometry);
+            if !path.exists() {
+                bail!(
+                    "{:?} is neither a geometry file nor a built-in type — \
+                     the built-ins are 4x6x6, 4x8x8, 9x6x6, 8in14, 6in10in14",
+                    args.geometry
+                );
+            }
+            read_geometry(path)?
+        }
+    };
+    print!("{}", bpt_forge::inspect::render(&geometry));
+    std::io::stdout().flush().ok();
+    Ok(EXIT_OK)
 }
 
 /// Read and validate a geometry file. Reading is the CLI's job: the

@@ -1,9 +1,9 @@
-//! K4: a puzzle type is data — a grid size plus the rectangular regions
+//! K23: a puzzle type is data — a grid size plus the rectangular regions
 //! that must each satisfy the Takuzu rules. Built-in types and invented
 //! ones are entries in the same model, so a new type is a TOML file
 //! rather than a code change here.
 //!
-//! Regions are rectangular (AR3b) although every type known today is
+//! Regions are rectangular (AR22b) although every type known today is
 //! square: the alternative was migrating hand-written geometry files
 //! later, and overlapping-band compositions are the one genuinely novel
 //! family in scope (G3).
@@ -160,7 +160,7 @@ impl Geometry {
         Ok(geometry)
     }
 
-    /// Structural validation (K4). Feasibility is a different question
+    /// Structural validation (K23). Feasibility is a different question
     /// and needs the solver, so it is not answered here — see
     /// `GeometryError::ProvedInfeasible`, produced from L3.
     pub fn validate(&self) -> Result<(), GeometryError> {
@@ -218,7 +218,7 @@ impl Geometry {
     }
 
     /// The smallest region covering a cell, by area, with earlier regions
-    /// winning ties. Drives the inspect rendering (M6): the innermost
+    /// winning ties. Drives the inspect rendering (M25): the innermost
     /// region is the one a reader needs to see.
     pub fn innermost_at(&self, row: usize, col: usize) -> Option<usize> {
         self.regions

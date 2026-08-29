@@ -323,3 +323,48 @@ fn b5_version_carries_the_git_revision() {
         .expect("a parenthesised revision");
     assert!(!rev.trim().is_empty(), "the revision must not be blank");
 }
+
+/// M25: the geometry inspector, which the help text has promised since
+/// the merge but which nothing exposed until now.
+#[test]
+fn m25_inspect_renders_a_builtin_and_a_file() {
+    let builtin = std::process::Command::new(env!("CARGO_BIN_EXE_bpt"))
+        .args(["inspect", "4x6x6"])
+        .output()
+        .expect("bpt runs");
+    assert_eq!(builtin.status.code(), Some(0));
+    let text = String::from_utf8_lossy(&builtin.stdout);
+    assert!(text.contains("12x12"), "{text}");
+    assert!(text.contains("5 region"), "{text}");
+    assert!(text.contains("Verdict:"), "{text}");
+
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("workspace root")
+        .join("geometries/8in12in16.toml");
+    let file = std::process::Command::new(env!("CARGO_BIN_EXE_bpt"))
+        .arg("inspect")
+        .arg(&path)
+        .output()
+        .expect("bpt runs");
+    assert_eq!(file.status.code(), Some(0));
+    let text = String::from_utf8_lossy(&file.stdout);
+    assert!(
+        text.contains("16x16"),
+        "an invented type inspects too: {text}"
+    );
+}
+
+#[test]
+fn m25_inspect_names_what_it_could_not_find() {
+    let out = std::process::Command::new(env!("CARGO_BIN_EXE_bpt"))
+        .args(["inspect", "9x9x9"])
+        .output()
+        .expect("bpt runs");
+    assert_eq!(out.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("neither a geometry file nor a built-in"),
+        "and says what the built-ins are: {stderr}"
+    );
+}

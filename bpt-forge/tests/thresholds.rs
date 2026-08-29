@@ -48,6 +48,20 @@ fn timed() -> bool {
     !cfg!(debug_assertions)
 }
 
+/// G8's figures are stated for Kenny's PC. The same test also runs on
+/// shared CI runners, which the solver's own threshold test measured at
+/// roughly 3.5x slower across the board; GitHub's Windows runner failed
+/// the 14x14 bound at exactly that ratio. Widening there keeps the test
+/// what it is on CI — a detector for an algorithmic regression — while
+/// the number that answers G8 is the one measured locally.
+fn budget(base: Duration) -> Duration {
+    if std::env::var_os("CI").is_some() {
+        base * 4
+    } else {
+        base
+    }
+}
+
 #[test]
 fn g8_a_very_hard_14x14_takes_under_ten_seconds() {
     if !timed() {
@@ -55,9 +69,10 @@ fn g8_a_very_hard_14x14_takes_under_ten_seconds() {
     }
     let (_, worst) = measure("14", Level::L4, 8);
     println!("14x14 L4, worst of 8: {worst:?}");
+    let budget = budget(Duration::from_secs(10));
     assert!(
-        worst < Duration::from_secs(10),
-        "G8: the hardest 14x14 took {worst:?}, budget 10s"
+        worst < budget,
+        "G8: the hardest 14x14 took {worst:?}, budget {budget:?}"
     );
 }
 
@@ -68,9 +83,10 @@ fn g8_a_hundred_10x10_puzzles_take_under_a_minute() {
     }
     let (total, _) = measure("10", Level::L4, 100);
     println!("100x 10x10 L4: {total:?}");
+    let budget = budget(Duration::from_secs(60));
     assert!(
-        total < Duration::from_secs(60),
-        "G8: 100 10x10 puzzles took {total:?}, budget 60s"
+        total < budget,
+        "G8: 100 10x10 puzzles took {total:?}, budget {budget:?}"
     );
 }
 
@@ -88,9 +104,10 @@ fn g8_every_special_type_takes_under_thirty_seconds() {
     for kind in ["4x6x6", "4x8x8", "9x6x6", "8in14", "6in10in14"] {
         let (_, worst) = measure(kind, Level::L4, 3);
         println!("{kind} L4, worst of 3: {worst:?}");
+        let budget = budget(Duration::from_secs(30));
         assert!(
-            worst < Duration::from_secs(30),
-            "G8: {kind} took {worst:?}, budget 30s"
+            worst < budget,
+            "G8: {kind} took {worst:?}, budget {budget:?}"
         );
     }
 }

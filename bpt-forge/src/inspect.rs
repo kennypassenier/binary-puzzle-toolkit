@@ -1,4 +1,4 @@
-//! M6: render a geometry as text so a mistyped origin is visible instead
+//! M25: render a geometry as text so a mistyped origin is visible instead
 //! of mysterious. Pure string building — printing is the CLI's job (AR1).
 
 use crate::geometry::Geometry;

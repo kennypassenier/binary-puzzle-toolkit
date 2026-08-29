@@ -71,6 +71,15 @@ fn m30_a_stored_batch_regenerates_byte_for_byte() {
             carved.puzzle.to_line(),
             carved.solution.to_line()
         );
+        // A checkout that rewrote the line endings looks exactly like a
+        // reproducibility break, so say which it is. `.gitattributes`
+        // marks fixtures/** as -text to stop it happening at all.
+        assert!(
+            !stored.contains('\r'),
+            "{} was checked out with CRLF line endings — this is a checkout \
+             problem, not a reproducibility one; see .gitattributes",
+            entry.file
+        );
         assert_eq!(
             stored, rebuilt,
             "{} did not restore — reproducibility broke since the fixture was written",

@@ -1,10 +1,10 @@
-//! AR6/AR13.5: every error carries a remedy, and "proved infeasible" is
-//! a different answer from "gave up after N work units" — K4's tests
+//! AR6/AR32.5: every error carries a remedy, and "proved infeasible" is
+//! a different answer from "gave up after N work units" — K23's tests
 //! depend on telling those apart.
 
 use std::fmt;
 
-/// Why a geometry could not be used. Structural problems (K4) are
+/// Why a geometry could not be used. Structural problems (K23) are
 /// detected without a solver; the feasibility variants exist here so the
 /// distinction is part of the type from the start, and are produced from
 /// L3 onwards when the filler can actually attempt a grid.
@@ -38,7 +38,7 @@ pub enum GeometryError {
     /// regions contradict each other. Produced from L3.
     ProvedInfeasible { detail: String },
     /// The solver ran out of its work-unit budget without deciding.
-    /// Explicitly NOT the same answer as `ProvedInfeasible` (AR13.5).
+    /// Explicitly NOT the same answer as `ProvedInfeasible` (AR32.5).
     BudgetExhausted { work_units: u64 },
 }
 

@@ -2,4 +2,7 @@
 # never let git translate their line endings, on any platform.
 tests/fixtures/** -text
 corpus/** -text
+# The restore drill compares a stored batch byte for byte; a checkout
+# that rewrote its line endings would read as reproducibility breaking.
+fixtures/** -text
 **/tests/fixtures/** -text
