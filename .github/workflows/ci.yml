@@ -62,6 +62,21 @@ jobs:
       - name: Generation baseline (release)
         run: cargo test --release -p bpt-forge --test baseline -- --nocapture
 
+  generator-validation:
+    name: D1 sweep and the invented types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      # Release only, and out of the commit gates: these take many
+      # minutes. D1 puts a batch of every geometry through the solver;
+      # K28 does the same for the two types the site does not publish.
+      # Both are marked #[ignore] so a commit never waits on them.
+      - name: D1 validation sweep
+        run: cargo test --release -p bpt --test validation -- --ignored --nocapture
+      - name: Invented types end to end
+        run: cargo test --release -p bpt --test invented_types -- --ignored --nocapture
+
   restore-drill:
     name: restore drill from a fresh clone
     runs-on: ubuntu-latest
