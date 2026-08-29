@@ -13,10 +13,10 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 
 | Field | Value |
 |---|---|
-| Current phase | solver half: 9 (release prepared, not tagged); generator half: 6 complete (L0-L8 built, CI green) |
+| Current phase | 7 done for both halves (hardening; gaps closed or recorded in docs/TEST_PLAN.md). Next: 8, documentation |
 | Last completed gate | merge decisions + phase 2 mandatory items (2026-08-28) |
-| Next gate | combined report: the merge and the generator's L2-L8, plus mini-rounds Q5-Q7 |
-| AFK mode | ON since 2026-08-28 — gates accumulate, deviations queue as mini-rounds |
+| Next gate | phase 8: per-document approval. Documentation still describes the solver only and still says binsolve |
+| AFK mode | OFF since 2026-08-29 — the queue was presented and cleared |
 
 <!-- Update this block after every completed gate. -->
 
@@ -38,6 +38,7 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 | docs/solve/ | the solver half's phase documents and its user documentation |
 | docs/forge/ | the generator half's phase documents |
 | docs/DEVELOPMENT.md | working on the code; the one-time hook activation |
+| docs/TEST_PLAN.md | every suite, and what is deliberately not covered |
 
 ## Feature IDs
 
