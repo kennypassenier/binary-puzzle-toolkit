@@ -13,9 +13,9 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 
 | Field | Value |
 |---|---|
-| Current phase | 9 done — v1.0.0 released 2026-08-30 from commit 62f971b. Next: 10, the retrospective |
-| Last completed gate | phase 9 release report, all six items signed (2026-08-30); Kenny chose tag + draft + Claude publishes |
-| Next gate | phase 10: the retrospective |
+| Current phase | 10 done — all eleven phases complete. v1.0.0 released 2026-08-30 from commit 62f971b |
+| Last completed gate | phase 10 retrospective (2026-08-30): six lessons adopted, committed to dev-procedure as 000c03e |
+| Next gate | none — the project is released. New work starts a mini-round or a new cycle |
 | AFK mode | OFF since 2026-08-29 — the queue was presented and cleared |
 
 <!-- Update this block after every completed gate. -->
