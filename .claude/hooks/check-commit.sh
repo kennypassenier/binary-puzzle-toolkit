@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# HOOK_VERSION=2
+# HOOK_VERSION=3
 # Dev-procedure commit gate (option B): a PreToolUse hook on the Bash
 # tool. Blocks `git commit` unless (1) the project's gates pass and
 # (2) the commit message carries feature/milestone IDs in brackets.
@@ -221,7 +221,8 @@ if ! printf '%s' "$haystack" | grep -qE '\[(meta|[A-Za-z]{1,4}[0-9]|[a-z]{3,}(-[
   {
     echo "COMMIT BLOCKED — message lacks feature/milestone IDs (standing rule 4)."
     echo "Add the IDs this commit implements, e.g.: feat(sync): groups [feat-storage-12, arch-7]"
-    echo "Pure infrastructure commits use [meta]."
+    echo "Pure infrastructure commits use [meta], which stands alone —"
+    echo "[meta, fix-1] is refused; write [fix-1] when the commit does the work."
   } >&2
   exit 2
 fi
