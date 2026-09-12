@@ -16,6 +16,7 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 | Current phase | 10 done — all eleven phases complete. v1.0.0 released 2026-08-30 from commit 62f971b |
 | Last completed gate | phase 10 retrospective (2026-08-30): six lessons adopted, committed to dev-procedure as 000c03e |
 | Next gate | none — the project is released. New work starts a mini-round or a new cycle |
+| Next action | waiting on Kenny: nothing in progress here |
 | AFK mode | OFF since 2026-08-29 — the queue was presented and cleared |
 
 <!-- Update this block after every completed gate. -->
