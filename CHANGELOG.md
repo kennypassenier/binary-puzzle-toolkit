@@ -4,7 +4,7 @@ All notable changes to BinaryPuzzleToolkit are documented here. The format follo
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions
 follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] — 2026-09-26
 
 ### Added
 

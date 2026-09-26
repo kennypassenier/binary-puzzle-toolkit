@@ -117,7 +117,7 @@ dependencies = [
 
 [[package]]
 name = "bpt"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "bpt-core",
@@ -130,7 +130,7 @@ dependencies = [
 
 [[package]]
 name = "bpt-core"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "criterion",
  "proptest",
@@ -138,7 +138,7 @@ dependencies = [
 
 [[package]]
 name = "bpt-forge"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "bpt-core",
  "criterion",
@@ -153,7 +153,7 @@ dependencies = [
 
 [[package]]
 name = "bpt-tui"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "bpt-core",
