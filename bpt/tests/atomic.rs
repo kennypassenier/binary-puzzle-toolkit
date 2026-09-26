@@ -125,3 +125,37 @@ fn ar10_a_permanent_rename_failure_is_reported_without_five_retries() {
 
     std::fs::remove_dir_all(&dir).ok();
 }
+
+/// fix-1, found live on Windows 11 on 2026-09-26: a destination another
+/// program holds open fails the rename with ERROR_ACCESS_DENIED (5), not
+/// the sharing violation (32) the retry waited for, so the retry never
+/// ran. Placement: CI's Windows job, on every push, because the fault
+/// only exists where Windows file locks do.
+#[cfg(windows)]
+#[test]
+fn fix_1_a_lock_released_within_the_retry_window_does_not_fail_the_write() {
+    use std::os::windows::fs::OpenOptionsExt;
+
+    let dir = scratch("locked");
+    let target = dir.join("out.txt");
+    std::fs::write(&target, "old").unwrap();
+
+    // Share mode 0: no other handle may read, write or delete, which is
+    // what Excel holding a file amounts to.
+    let lock = std::fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0)
+        .open(&target)
+        .unwrap();
+    let release = std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        drop(lock);
+    });
+
+    let result = atomic::write(&target, "new");
+    release.join().unwrap();
+
+    result.expect("the lock was gone within the retry window");
+    assert_eq!(std::fs::read_to_string(&target).unwrap(), "new");
+    std::fs::remove_dir_all(&dir).ok();
+}
