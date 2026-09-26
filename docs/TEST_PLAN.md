@@ -62,6 +62,13 @@ ever started the toolkit on a real Windows machine.
 the procedure's own rule the honest state is **beta until that checklist
 is signed**, not "done".
 
+*Update 2026-09-26:* sections 1 to 6 of the checklist passed on Kenny's
+Windows 11 PC against the v1.0.0 release archive. Section 7 (console
+rendering and the TUI) needs a person at the screen and is still open.
+The run found that a locked destination fails with `os error 5`, not
+the sharing violation the rename retry waits for, so that retry never
+runs in the case it was written for.
+
 **Why accepted.** Kenny works on Garuda; Windows is carried because it
 could be, not because it is used. Note that the Windows runner did earn
 its place on 2026-08-29 by catching two real failures invisible locally

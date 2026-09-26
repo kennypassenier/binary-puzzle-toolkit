@@ -224,6 +224,10 @@ leaves a complete, valid partial batch plus a manifest with
 > mistake it for a complete batch. Responsiveness depends on binsolve
 > mini-round B4 (node budget) — without it, cancellation waits for the
 > current uniqueness proof, worst measured 15.9 s.
+> *Update 2026-09-26:* B4 was built on 2026-08-29. Cancellation still
+> waits for the puzzle in flight, because the unbudgeted strategy ladder,
+> not the search, is where a large carve spends its time
+> (docs/PENDING_MINI_ROUNDS.md, Q7).
 
 ### M28 · Fuzz / property testing of the pipeline
 Property tests over random geometries, sizes and seeds asserting the

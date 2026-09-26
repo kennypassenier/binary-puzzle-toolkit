@@ -14,11 +14,13 @@ with a manifest that can rebuild them, and independent validation of
 every generated puzzle through the solver. There is no published binary
 yet — build from source.
 
-Windows is **build-verified, not runtime-verified**: CI compiles and
-runs the whole suite there, and it has caught real failures, but nobody
-has started the toolkit on a real Windows machine. By the project's own
-rule that is beta until
-[the checklist](docs/solve/WINDOWS_TEST_CHECKLIST.md) is signed.
+Windows is **partly runtime-verified**: CI compiles and runs the whole
+suite there, and on 2026-09-26 the v1.0.0 release binaries passed the
+scripted part of
+[the checklist](docs/solve/WINDOWS_TEST_CHECKLIST.md) on a real Windows
+11 machine. The console and TUI section still needs a person at the
+screen, so by the project's own rule Windows stays beta until the
+checklist is signed.
 [docs/TEST_PLAN.md](docs/TEST_PLAN.md) lists what else is deliberately
 not covered.
 

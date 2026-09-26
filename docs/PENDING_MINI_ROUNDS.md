@@ -67,8 +67,9 @@ repository:
   script stamps the short hash, `-dirty` when the tree had uncommitted
   changes, `unknown` outside a checkout. Batch manifests record it, so a
   batch can always be traced to the build that wrote it.
-- **B4 node budget** remains open; it blocks nothing today except the
-  cancellation half of M26 (see Q5).
+- **B4 node budget** — built 2026-08-29 (see Q7). It bounds each
+  uniqueness question, not a whole carve, so Ctrl-C still waits for the
+  puzzle in flight (see Q5).
 
 ## Q3 · Phase 2's three mandatory items — DECIDED 2026-08-29
 
@@ -148,8 +149,10 @@ T11 = the dependency allowlist.
 
 What genuinely remains is the *grain*: the smallest interruptible unit
 is one puzzle, which on a 16x16 is seconds. Mini-round **B4**'s
-deterministic node budget is what would make it finer, and B4 is
-Kenny's own "later".
+deterministic node budget was expected to make it finer. B4 was built
+on 2026-08-29 (Q7) and did not: it bounds the search, while the time
+goes to the unbudgeted strategy ladder, so the grain is still one
+puzzle.
 
 ## Q6 · Invented types and their tags — DECIDED 2026-08-29
 
