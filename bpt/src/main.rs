@@ -18,7 +18,9 @@ use bpt_forge::carve::Symmetry;
 use bpt_forge::grade::Level;
 use bpt_forge::manifest as forge_manifest;
 use clap::Parser;
-use output::{canonical_line, marker_line, terminal_display, write_atomic};
+use output::{
+    canonical_line, json_invalid, json_line, marker_line, terminal_display, write_atomic,
+};
 use std::collections::HashSet;
 use std::fs;
 use std::io::{IsTerminal, Write};
@@ -218,6 +220,12 @@ struct SolveArgs {
     /// has no name the line format can carry
     #[arg(long, value_name = "FILE")]
     geometry: Option<PathBuf>,
+
+    /// One JSON object per puzzle instead of a line: puzzle, status,
+    /// solution, difficulty, reason, ms, and with --explain the trace
+    /// (feat-json-1)
+    #[arg(long, conflicts_with = "check")]
+    json: bool,
 }
 
 fn main() -> ExitCode {
@@ -311,7 +319,7 @@ fn run(args: SolveArgs) -> Result<u8> {
     };
     // A batch trace on shared stderr would interleave into garbage;
     // sequential execution is the AR10 answer (M5 must respect this).
-    let interactive = std::io::stdout().is_terminal() && inputs.len() == 1;
+    let interactive = std::io::stdout().is_terminal() && inputs.len() == 1 && !args.json;
 
     let mut lines = Vec::with_capacity(inputs.len());
     let mut traces = String::new();
@@ -323,7 +331,11 @@ fn run(args: SolveArgs) -> Result<u8> {
             Ok(p) => p,
             Err(e) => {
                 failures += 1;
-                lines.push(marker_line("invalid", original));
+                lines.push(if args.json {
+                    json_invalid(original, &e.to_string())
+                } else {
+                    marker_line("invalid", original)
+                });
                 if args.explain.is_some() {
                     traces.push_str(&format!("{original}: {e}\n"));
                 }
@@ -340,7 +352,17 @@ fn run(args: SolveArgs) -> Result<u8> {
             Some((size, regions)) => {
                 if puzzle.givens.size() != *size {
                     failures += 1;
-                    lines.push(marker_line("invalid", original));
+                    lines.push(if args.json {
+                        json_invalid(
+                            original,
+                            &format!(
+                                "the geometry describes a {size}x{size} grid, this puzzle is {0}x{0}",
+                                puzzle.givens.size()
+                            ),
+                        )
+                    } else {
+                        marker_line("invalid", original)
+                    });
                     if args.explain.is_some() {
                         traces.push_str(&format!(
                             "{original}: the geometry describes a {size}x{size} grid, \
@@ -369,7 +391,17 @@ fn run(args: SolveArgs) -> Result<u8> {
         if !matches!(outcome, SolveOutcome::Solved { .. }) {
             failures += 1;
         }
-        lines.push(canonical_line(&outcome, &puzzle, original));
+        lines.push(if args.json {
+            let trace = args.explain.is_some().then(|| {
+                format_trace(&log.events)
+                    .lines()
+                    .map(str::to_owned)
+                    .collect()
+            });
+            json_line(&outcome, &puzzle, original, elapsed, trace)
+        } else {
+            canonical_line(&outcome, &puzzle, original)
+        });
         if args.explain.is_some() {
             if inputs.len() > 1 {
                 traces.push_str(&format!("--- {original}\n"));

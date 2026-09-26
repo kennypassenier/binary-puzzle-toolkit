@@ -35,6 +35,57 @@ pub fn canonical_line(outcome: &SolveOutcome, puzzle: &Puzzle, original: &str) -
     }
 }
 
+/// feat-json-1: one JSON object per puzzle, still one line per input
+/// line so the K9 mapping holds. Fields a status cannot have are null
+/// rather than absent, so a consumer reads every line the same way.
+pub fn json_line(
+    outcome: &SolveOutcome,
+    puzzle: &Puzzle,
+    original: &str,
+    elapsed: Duration,
+    trace: Option<Vec<String>>,
+) -> String {
+    let (status, solution, difficulty, reason) = match outcome {
+        SolveOutcome::Solved { stats, .. } => (
+            "solved",
+            Some(canonical_line(outcome, puzzle, original)),
+            Some(grade(stats).name()),
+            None,
+        ),
+        SolveOutcome::MultipleSolutions { .. } => ("multiple", None, None, None),
+        SolveOutcome::Contradiction { reason } => {
+            ("contradiction", None, None, Some(reason.to_string()))
+        }
+        SolveOutcome::Stuck { .. } => ("stuck", None, None, None),
+        SolveOutcome::BudgetExhausted { .. } => ("budget", None, None, None),
+    };
+    let mut object = serde_json::json!({
+        "puzzle": original,
+        "status": status,
+        "solution": solution,
+        "difficulty": difficulty,
+        "reason": reason,
+        "ms": (elapsed.as_secs_f64() * 1_000_000.0).round() / 1000.0,
+    });
+    if let Some(trace) = trace {
+        object["trace"] = serde_json::json!(trace);
+    }
+    object.to_string()
+}
+
+/// A line that did not parse, in the same JSON shape (feat-json-1).
+pub fn json_invalid(original: &str, error: &str) -> String {
+    serde_json::json!({
+        "puzzle": original,
+        "status": "invalid",
+        "solution": null,
+        "difficulty": null,
+        "reason": error,
+        "ms": null,
+    })
+    .to_string()
+}
+
 /// Human-readable grid with a blank column between cells (K11).
 pub fn pretty_grid(grid: &Grid) -> String {
     grid.to_string()

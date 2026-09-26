@@ -32,11 +32,25 @@ Useful flags:
 | `--out FILE` | write results to a file, atomically |
 | `--check` | verify puzzle+solution files instead of solving them |
 | `--geometry FILE` | supply the regions for a type the line format cannot name |
+| `--json` | one JSON object per puzzle instead of a line; see below |
 
 A special type is marked with a prefix: `4x8x8:110...`. Plain grids need
 no prefix — the size follows from the length.
 
 Exit codes: 0 all solved · 1 one or more failed · 2 usage or file error.
+
+With `--json` every output line is one object, still one per input line:
+
+```
+{"difficulty":"easy","ms":0.015,"puzzle":"1..0....00.1.00..1......00.1...1..00","reason":null,"solution":"101010010011100101011010001101110100","status":"solved"}
+```
+
+`status` is `solved`, `multiple`, `contradiction`, `stuck`, `budget` or
+`invalid`. Every field is on every line; the ones a status cannot have
+are `null`. `reason` explains a contradiction or an invalid line.
+`difficulty` is `easy`, `hard` or `very hard`. With `--explain` the
+object also carries `trace`, a list of the steps, and the trace is still
+written where `--explain` says as well.
 
 ## Generating
 

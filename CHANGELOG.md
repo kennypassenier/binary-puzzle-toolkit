@@ -14,6 +14,9 @@ follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
   person cannot solve (not unique, no solution, needs guessing,
   undecided, invalid) by file and line. Exits 1 when any puzzle is not
   solvable by a person, so it can guard a website's puzzle set.
+- `bpt solve --json` (feat-json-1): one JSON object per puzzle (puzzle,
+  status, solution, difficulty, reason, ms, and with `--explain` the
+  trace), still one line per input line.
 
 ### Fixed
 
