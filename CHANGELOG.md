@@ -15,6 +15,14 @@ follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
   undecided, invalid) by file and line. Exits 1 when any puzzle is not
   solvable by a person, so it can guard a website's puzzle set.
 
+### Fixed
+
+- Writing `--out` onto a file another program holds open no longer
+  fails at once when the lock is released within the retry window
+  (fix-1). Windows reports a held destination as access denied, never
+  as the sharing violation the retry waited for, so the retry had never
+  run. Found by running the Windows checklist on 2026-09-26.
+
 ## [1.0.0] — 2026-08-30
 
 First release. One toolkit that solves binary puzzles and generates

@@ -116,8 +116,8 @@ pub fn terminal_display(
 ///
 /// Delegates to the toolkit's atomic writer, which is the generator's
 /// implementation: it checks for a directory up front instead of
-/// inferring it from a rename error code, retries only on a genuine
-/// Windows sharing violation rather than on any I/O error, and syncs the
+/// inferring it from a rename error code, retries only on the Windows
+/// codes a held file produces (fix-1) rather than on any I/O error, and syncs the
 /// destination directory so the rename is actually durable. The solver
 /// half carried a simpler version until the two projects merged.
 pub fn write_atomic(path: &Path, content: &str) -> io::Result<()> {

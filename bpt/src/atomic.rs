@@ -122,17 +122,22 @@ fn temp_path(path: &Path) -> PathBuf {
     path.with_file_name(name)
 }
 
-/// Only ERROR_SHARING_VIOLATION is worth retrying: it means another
-/// process holds the file open right now. Windows CI proved that
-/// `ErrorKind::PermissionDenied` is too coarse — renaming onto an
-/// existing directory reports the same kind, so a permanent failure was
-/// retried five times and then blamed on a lock that never existed.
-/// Unix has no transient rename failure of this sort at all.
+/// A destination another process holds open fails the rename with
+/// ERROR_ACCESS_DENIED, not ERROR_SHARING_VIOLATION: measured on Windows 11
+/// under every share mode (fix-1). Access denied is ambiguous only
+/// because a directory at the destination reports it too, and `write`
+/// refuses that case before any rename, so here it means a lock. A
+/// genuinely read-only destination pays the 200 ms of back-off before
+/// the same error. Unix has no transient rename failure of this sort.
 fn is_transient(error: &std::io::Error) -> bool {
     #[cfg(windows)]
     {
+        const ERROR_ACCESS_DENIED: i32 = 5;
         const ERROR_SHARING_VIOLATION: i32 = 32;
-        error.raw_os_error() == Some(ERROR_SHARING_VIOLATION)
+        matches!(
+            error.raw_os_error(),
+            Some(ERROR_ACCESS_DENIED | ERROR_SHARING_VIOLATION)
+        )
     }
     #[cfg(not(windows))]
     {

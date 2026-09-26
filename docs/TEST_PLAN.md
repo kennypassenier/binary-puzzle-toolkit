@@ -25,7 +25,7 @@ history; where the two disagree, this one is current.
 | Baseline | `bpt-forge/tests/baseline.rs` | measured medians and p95s per geometry, guarded against regression |
 | CLI | `bpt/tests/cli.rs` | every subcommand end to end against the real binary |
 | Batches | `bpt/tests/batch_cli.rs` | the batch layout, all-or-nothing, duplicates against an existing corpus, cancellation, symmetry, clue targets |
-| Atomic writes | `bpt/tests/atomic.rs` | temp-then-rename, orphan cleanup, the Windows sharing-violation path |
+| Atomic writes | `bpt/tests/atomic.rs` | temp-then-rename, orphan cleanup, a Windows lock released inside the retry window (fix-1, Windows CI only) |
 | Report | `bpt/tests/report_cli.rs`, `bpt-forge/src/report.rs` | every verdict row, the binarypuzzle.com corpus as 20 of 20 solvable by a person, located listing of the rest, directory reading, the exit status |
 | Validation | `bpt/tests/validation.rs` | generated puzzles proven unique through the real binary, plus a sabotage puzzle that must be caught |
 | Restore drill | `bpt/tests/restore_drill.rs` | a committed batch rebuilt from its manifest alone, byte for byte |
@@ -68,7 +68,8 @@ Windows 11 PC against the v1.0.0 release archive. Section 7 (console
 rendering and the TUI) needs a person at the screen and is still open.
 The run found that a locked destination fails with `os error 5`, not
 the sharing violation the rename retry waits for, so that retry never
-runs in the case it was written for.
+ran in the case it was written for. Fixed as fix-1 (see
+docs/CORRECTIONS.md); the Windows CI job now holds a real lock.
 
 Kenny decided on 2026-09-26 that Windows stays beta: section 7 remains
 open until someone runs it at a screen.
