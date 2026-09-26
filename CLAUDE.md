@@ -16,7 +16,7 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 | Current phase | 10 done — all eleven phases complete. v1.0.0 released 2026-08-30 from commit 62f971b |
 | Last completed gate | phase 10 retrospective (2026-08-30): six lessons adopted, committed to dev-procedure as 000c03e |
 | Next gate | none — the project is released. New work starts a mini-round or a new cycle |
-| Next action | waiting on Kenny: the 2026-09-26 decision round (rename-retry correction, Windows section 7, three Later features); see docs/CORRECTIONS.md and docs/solve/WINDOWS_TEST_CHECKLIST.md |
+| Next action | building the 2026-09-26 decision round in order: feat-report-1 (report), fix-1 (rename retry), feat-json-1 (--json), then release 1.1.0 |
 | AFK mode | OFF since 2026-08-29 — the queue was presented and cleared |
 
 <!-- Update this block after every completed gate. -->
@@ -28,13 +28,15 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 | `bpt-core` | grid, regions, rules, the text format, strategies, search — zero runtime dependencies |
 | `bpt-forge` | geometry, fill, carve, grading: the generator |
 | `bpt-tui` | the replay viewer's render model |
-| `bpt` | one binary: `bpt solve`, `bpt forge`, `bpt watch`, `bpt inspect` |
+| `bpt` | one binary: `bpt solve`, `bpt forge`, `bpt watch`, `bpt inspect`, `bpt report` |
 
 ## Project documents
 
 | Doc | Purpose |
 |---|---|
 | docs/ID_MAP.md | how the generator's feature IDs were renumbered at the merge |
+| docs/ID_TRANSLATIONS.md | old-shape IDs moved to the house scheme (feat-json-1, feat-report-1, …) |
+| docs/CORRECTIONS.md | live-found faults, one nine-field record each |
 | docs/MERGE_PLAN.md | the merge decisions and the order of work |
 | docs/USER_GUIDE.md, DEBUGGING_GUIDE.md, OPERATIONS_RUNBOOK.md, ARCHITECTURE_REFERENCE.md, TEST_PLAN.md | the current user documentation, covering both halves |
 | docs/solve/ | the solver half's phase documents (scope, features, decisions, plan) |

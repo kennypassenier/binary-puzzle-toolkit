@@ -26,6 +26,7 @@ history; where the two disagree, this one is current.
 | CLI | `bpt/tests/cli.rs` | every subcommand end to end against the real binary |
 | Batches | `bpt/tests/batch_cli.rs` | the batch layout, all-or-nothing, duplicates against an existing corpus, cancellation, symmetry, clue targets |
 | Atomic writes | `bpt/tests/atomic.rs` | temp-then-rename, orphan cleanup, the Windows sharing-violation path |
+| Report | `bpt/tests/report_cli.rs`, `bpt-forge/src/report.rs` | every verdict row, the binarypuzzle.com corpus as 20 of 20 solvable by a person, located listing of the rest, directory reading, the exit status |
 | Validation | `bpt/tests/validation.rs` | generated puzzles proven unique through the real binary, plus a sabotage puzzle that must be caught |
 | Restore drill | `bpt/tests/restore_drill.rs` | a committed batch rebuilt from its manifest alone, byte for byte |
 | Invented types | `bpt/tests/invented_types.rs` | types defined only as data, generated and solved end to end |

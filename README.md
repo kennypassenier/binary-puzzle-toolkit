@@ -62,6 +62,13 @@ each puzzle. Inspect any layout before generating from it:
 bpt inspect 4x6x6in16
 ```
 
+Check whether a set of puzzles can be solved by a person, and how hard
+it is:
+
+```
+bpt report corpus/
+```
+
 Watch a puzzle being solved step by step:
 
 ```

@@ -4,6 +4,17 @@ All notable changes to BinaryPuzzleToolkit are documented here. The format follo
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions
 follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `bpt report PATH...` (feat-report-1): reads puzzle files or
+  directories and reports how many puzzles land on each level, the clue
+  share and the strategy steps per level, and lists every puzzle a
+  person cannot solve (not unique, no solution, needs guessing,
+  undecided, invalid) by file and line. Exits 1 when any puzzle is not
+  solvable by a person, so it can guard a website's puzzle set.
+
 ## [1.0.0] — 2026-08-30
 
 First release. One toolkit that solves binary puzzles and generates

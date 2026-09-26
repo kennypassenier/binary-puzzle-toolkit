@@ -41,6 +41,17 @@ impl Level {
     }
 }
 
+/// The level a strategies-only solve lands on, from the hardest tier it
+/// needed. One mapping, shared by the generator and the report, so the
+/// two can never disagree about what "L2" means.
+pub fn level_for_tier(max_tier: u8) -> Level {
+    match max_tier {
+        0..=2 => Level::L1,
+        3 => Level::L2,
+        _ => Level::L3,
+    }
+}
+
 /// Measure the level of a puzzle already known to be solvable.
 ///
 /// `level` runs a full search to separate "needs guessing" from "has no
@@ -50,11 +61,7 @@ impl Level {
 /// it — so the ladder alone decides, and a stall means L4.
 pub fn level_of_solvable(puzzle: &Puzzle) -> Level {
     match solve(puzzle, SolveMode::StrategiesOnly, &mut NullObserver) {
-        SolveOutcome::Solved { stats, .. } => match stats.max_tier {
-            0..=2 => Level::L1,
-            3 => Level::L2,
-            _ => Level::L3,
-        },
+        SolveOutcome::Solved { stats, .. } => level_for_tier(stats.max_tier),
         _ => Level::L4,
     }
 }
@@ -66,11 +73,7 @@ pub fn level_of_solvable(puzzle: &Puzzle) -> Level {
 /// "needs guessing" from "impossible".
 pub fn level(puzzle: &Puzzle) -> Option<Level> {
     match solve(puzzle, SolveMode::StrategiesOnly, &mut NullObserver) {
-        SolveOutcome::Solved { stats, .. } => Some(match stats.max_tier {
-            0..=2 => Level::L1,
-            3 => Level::L2,
-            _ => Level::L3,
-        }),
+        SolveOutcome::Solved { stats, .. } => Some(level_for_tier(stats.max_tier)),
         SolveOutcome::Stuck { .. } => {
             match solve(puzzle, SolveMode::FirstSolution, &mut NullObserver) {
                 SolveOutcome::Solved { .. } => Some(Level::L4),

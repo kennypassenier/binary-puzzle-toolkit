@@ -137,6 +137,38 @@ Draws the grid with a letter per region, lists the regions, and says
 whether the layout is structurally valid — which catches a mistyped
 origin far faster than wondering why nothing generates.
 
+## Reporting on a collection
+
+```
+bpt report corpus/
+bpt report puzzles.txt more-puzzles/
+bpt report --geometry geometries/overlap8in12.toml overlap.txt
+```
+
+Reads puzzle files, or directories of `*.txt` files, and says how hard
+the collection is and whether a person can solve every puzzle in it.
+Blank lines and `solution:` lines are skipped, and the report says how
+many. Each puzzle lands in one row:
+
+| Row | Meaning |
+|---|---|
+| L1 patterns and counts | pairs, gaps and full lines are enough; binarypuzzle.com calls these easy or medium |
+| L2 cross-line reasoning | also needs comparing lines and counting what a line can still hold; the site's hard |
+| L3 line enumeration | also needs trying every way a line can still be filled; the site's very hard |
+| L4 needs guessing | one solution, but reasoning stalls before it |
+| not unique | more than one solution, so nobody can finish it by logic |
+| no solution | the clues contradict each other |
+| undecided (budget) | the uniqueness search hit `--budget` nodes before it could answer |
+| invalid line | the line does not parse, or does not fit `--geometry` |
+
+"Solvable by a person" means one solution reachable without guessing:
+L1 to L3. Every binarypuzzle.com puzzle in `corpus/` is. Every puzzle
+outside that is listed with its file and line, all of them.
+
+Exit codes: 0 every puzzle is solvable by a person · 1 at least one is
+not · 2 usage or file error. That makes the report usable as a check on
+a website's puzzle set.
+
 ## Watching
 
 ```

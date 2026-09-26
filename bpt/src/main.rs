@@ -66,6 +66,34 @@ enum Command {
     Forge(ForgeArgs),
     /// Show what a geometry file describes, and whether it is valid
     Inspect(InspectArgs),
+    /// Report how hard a collection of puzzles is, and list every one a
+    /// person cannot solve
+    Report(ReportArgs),
+}
+
+/// feat-report-1. Levels: L1 needs only local patterns and line counts
+/// (binarypuzzle.com's easy and medium), L2 cross-line reasoning (hard),
+/// L3 line enumeration (very hard), L4 guessing.
+#[derive(Parser, Debug)]
+#[command(after_help = "Exit status: 0 when every puzzle has one solution \
+reachable without guessing, 1 when any does not, 2 on a usage error.")]
+struct ReportArgs {
+    /// Puzzle files or directories. A directory is read recursively for
+    /// *.txt files; blank lines and 'solution:' lines are skipped and
+    /// counted
+    #[arg(value_name = "PATH", required = true)]
+    paths: Vec<PathBuf>,
+
+    /// Read the regions from a geometry file, for puzzles whose type has
+    /// no name the line format can carry. Applies to every puzzle
+    #[arg(long, value_name = "FILE")]
+    geometry: Option<PathBuf>,
+
+    /// Search nodes allowed when deciding whether a puzzle that
+    /// reasoning cannot finish has one solution; past it the puzzle is
+    /// reported as undecided
+    #[arg(long, default_value_t = bpt_forge::carve::UNIQUENESS_BUDGET)]
+    budget: u64,
 }
 
 /// M25: the command the help text has promised since the merge.
@@ -208,6 +236,7 @@ fn dispatch() -> Result<u8> {
         Command::Watch(args) => run_watch(args),
         Command::Forge(args) => run_forge(args),
         Command::Inspect(args) => run_inspect(args),
+        Command::Report(args) => run_report(args),
     }
 }
 
@@ -895,6 +924,107 @@ fn run_inspect(args: InspectArgs) -> Result<u8> {
     print!("{}", bpt_forge::inspect::render(&geometry));
     std::io::stdout().flush().ok();
     Ok(EXIT_OK)
+}
+
+/// feat-report-1: gather located puzzle lines, assess them in parallel,
+/// print the report.
+fn run_report(args: ReportArgs) -> Result<u8> {
+    let mut files = Vec::new();
+    for path in &args.paths {
+        collect_puzzle_files(path, &mut files)?;
+    }
+    let regions = match &args.geometry {
+        Some(path) => {
+            let geometry = read_geometry(path)?;
+            Some((geometry.size, geometry.to_regions()))
+        }
+        None => None,
+    };
+
+    let mut lines = Vec::new();
+    let (mut skipped_solution, mut skipped_blank) = (0usize, 0usize);
+    for file in &files {
+        let text = fs::read_to_string(file).with_context(|| {
+            format!(
+                "cannot read {} — check the path and permissions",
+                file.display()
+            )
+        })?;
+        for (n, line) in text.lines().enumerate() {
+            let line = line.trim_end_matches('\r');
+            if line.trim().is_empty() {
+                skipped_blank += 1;
+            } else if line.starts_with("solution:") {
+                skipped_solution += 1;
+            } else {
+                lines.push((format!("{}:{}", file.display(), n + 1), line.to_owned()));
+            }
+        }
+    }
+    if lines.is_empty() {
+        bail!(
+            "no puzzle lines found in {} file(s) — pass puzzle files, or a directory \
+             holding *.txt files with one puzzle per line",
+            files.len()
+        );
+    }
+
+    use rayon::prelude::*;
+    let entries: Vec<bpt_forge::report::Entry> = lines
+        .into_par_iter()
+        .map(|(location, line)| {
+            let Ok(puzzle) = parse_line(&line) else {
+                return bpt_forge::report::Entry::invalid(location);
+            };
+            let puzzle = match &regions {
+                Some((size, _)) if puzzle.givens.size() != *size => {
+                    return bpt_forge::report::Entry::invalid(location);
+                }
+                Some((_, regions)) => Puzzle::custom(puzzle.givens.clone(), regions.clone()),
+                None => puzzle,
+            };
+            bpt_forge::report::assess(location, &puzzle, args.budget)
+        })
+        .collect();
+
+    print!(
+        "{} puzzle(s) from {} file(s); skipped {skipped_solution} solution line(s) \
+         and {skipped_blank} blank line(s)\n\n{}",
+        entries.len(),
+        files.len(),
+        bpt_forge::report::render(&entries)
+    );
+    std::io::stdout().flush().ok();
+    Ok(if entries.iter().all(|e| e.verdict.human_solvable()) {
+        EXIT_OK
+    } else {
+        EXIT_SOME_FAILED
+    })
+}
+
+/// A file is taken as given; a directory contributes its *.txt files,
+/// recursively and in sorted order so two runs list puzzles alike.
+fn collect_puzzle_files(path: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
+    let meta = fs::metadata(path)
+        .with_context(|| format!("cannot read {} — check the path", path.display()))?;
+    if !meta.is_dir() {
+        files.push(path.to_path_buf());
+        return Ok(());
+    }
+    let mut children: Vec<PathBuf> = fs::read_dir(path)
+        .with_context(|| format!("cannot list {} — check the permissions", path.display()))?
+        .map(|entry| entry.map(|e| e.path()))
+        .collect::<std::io::Result<_>>()
+        .with_context(|| format!("cannot list {} — check the permissions", path.display()))?;
+    children.sort();
+    for child in children {
+        if child.is_dir() {
+            collect_puzzle_files(&child, files)?;
+        } else if child.extension().is_some_and(|e| e == "txt") {
+            files.push(child);
+        }
+    }
+    Ok(())
 }
 
 /// Read and validate a geometry file. Reading is the CLI's job: the
