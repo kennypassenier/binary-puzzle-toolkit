@@ -125,6 +125,9 @@ Windows interop, so the processes ran as native Windows processes.
 | 4 Atomic write + lock | pass, with a finding | output identical; lock: exit 2, clear message, old content kept, `.tmp` removed by the next run. **Finding:** a locked destination reports `Access is denied (os error 5)`, never the sharing violation (32) the retry waits for, under every share mode tried (None, Read, ReadWrite). The bounded retry therefore never runs for a locked destination. |
 | 5 Paths | pass | |
 | 6 Explain redirection | pass | 22 `step N:` lines |
-| 7 Console + TUI | open | needs Kenny at the screen |
+| 7 Console + TUI | open | needs Kenny at the screen; Windows stays beta by Kenny's decision of 2026-09-26 |
+
+Section 4 rerun on 2026-09-26 against the v1.1.0 release: a lock
+released after 50 ms or 100 ms no longer fails the write (fix-1, closed).
 
 Signed off by: ______________  date: ____________

@@ -13,10 +13,10 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 
 | Field | Value |
 |---|---|
-| Current phase | 10 done — all eleven phases complete. v1.0.0 released 2026-08-30 from commit 62f971b |
+| Current phase | 10 done — all eleven phases complete. v1.0.0 released 2026-08-30 from 62f971b; v1.1.0 released 2026-09-26 from ca0f918 |
 | Last completed gate | phase 10 retrospective (2026-08-30): six lessons adopted, committed to dev-procedure as 000c03e |
 | Next gate | none — the project is released. New work starts a mini-round or a new cycle |
-| Next action | waiting on Kenny: (1) push tag v1.1.0 (commit ca0f918, CI green, runbook §6 checks passed); after the release, Claude reruns Windows checklist section 4 for fix-1's measurement. The kp-soft puzzle work (Kenny chose both items 2026-09-26) is handed to a kp-soft thread; nothing of it happens in this repo |
+| Next action | waiting on Kenny: sign v1.1.0 on Garuda (`scripts/sign-release.sh v1.1.0`; the minisign key is only there, and moving it into the secrets sync is a workstation task). v1.1.0 released 2026-09-26, fix-1 closed by measurement. The kp-soft puzzle work is handed to a kp-soft thread |
 | AFK mode | OFF since 2026-08-29 — the queue was presented and cleared |
 
 <!-- Update this block after every completed gate. -->

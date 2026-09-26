@@ -7,8 +7,14 @@ Live-found faults, one record each, per the correction form in
 
 Status: approved by Kenny 2026-09-26 ("Klopt"). Test first: commit
 2cb74ca, red on the Windows CI job with `Access is denied. (os error 5)`
-(run 36252070265). Fixed in the following commit. Measurement open
-until the next release's Windows run (field 7).
+(run 36252070265). Fixed in the following commit.
+
+**Closed 2026-09-26 by measurement** (field 7), on Kenny's Windows 11 PC
+with the v1.1.0 release zip (SHA256 checked, `bpt 1.1.0 (ca0f918)`):
+a lock released after 50 ms and after 100 ms both let the write
+through with the new content, where 1.0.0 had left `stale`; a lock
+held throughout fails with exit 2 after 250 ms instead of 81 ms, which
+is the back-off running; no `.tmp` survives the next clean run.
 
 1. **What went wrong.** `bpt solve --out out.txt` with `out.txt` held
    open by another process fails with `Access is denied. (os error 5)`
