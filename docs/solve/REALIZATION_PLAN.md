@@ -20,8 +20,8 @@ updated after every milestone gate.
 | L8 · Fuzzing | M7 | done (2026-08-28, gate passed; 2 bugs found+fixed, both 1h runs clean) |
 | L9 · The TUI | K15 | built + two audit defects fixed; gate accumulating in AFK mode |
 
-Desired-not-scheduled: K11 is inside L6; M5 conditional in L7; M6
-(JSON) stays Later.
+Desired-not-scheduled: K11 is inside L6; M5 conditional in L7; feat-json-1
+(JSON) stayed Later until 2026-09-26, when it became Desired.
 
 ## Milestones
 

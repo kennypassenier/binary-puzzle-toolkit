@@ -13,7 +13,7 @@ recommended). Phase 4 entries follow. Changes only via mini-rounds
 | T3 | binsolve-core dependency | git dependency pinned to a commit (`https://github.com/kennypassenier/binary-puzzle-toolkit.git`, `rev = …`); local path override allowed for co-development |
 | T4 | RNG | `rand` + `rand_chacha` (`ChaCha8Rng`): reproducible across versions/platforms, u64-seedable, per-worker stream derivation for M22 |
 | T5 | Geometry definitions (K23) | TOML via serde — comment-friendly, hand-editable |
-| T6 | Manifest format (M23) | JSON via serde_json — program-written, `jq`-greppable, feeds M29 |
+| T6 | Manifest format (M23) | JSON via serde_json — program-written, `jq`-greppable, feeds feat-report-1 |
 | T7 | Parallelism (M22) | rayon — input-order collection keeps parallel-equals-sequential honest |
 | T8 | Duplicate detection (M21) | `HashSet<String>` of puzzle lines, zero deps — exact, no collision reasoning |
 | T9 | Progress + cancellation (M26) | hand-rolled stderr progress line (silent when not a TTY) + `ctrlc` crate for portable Linux/Windows signal handling |

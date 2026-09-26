@@ -9,9 +9,9 @@ dated notes under the affected feature.
 
 | Rating | Count | IDs |
 |---|---|---|
-| Essential | 13 | K20 K21 K22a-e K23 K24 K25 K26 K27 K28 K29 K30 K31 M20 |
+| Essential | 14 | K20 K21 K22a-e K23 K24 K25 K26 K27 K28 K29 K30 K31 M20 feat-report-1 |
 | Desired | 8 | M21 M22 M23 M24 M25 M26 M28 M30 |
-| Later | 2 | M27 M29 |
+| Later | 1 | feat-sheets-1 |
 | Don't do | 0 | — |
 
 ## Essential
@@ -251,24 +251,33 @@ deliberately altered manifest makes it fail.
 
 > **Added 2026-08-12 (Phase 2 mandatory-items mini-round, V3b).**
 
+### feat-report-1 · Difficulty distribution report
+Reads an existing corpus and reports tier distribution, clue-count
+spread and dominant strategies per tier.
+
+> **Amendment 2026-09-26 (Kenny's decision round after the Windows
+> run).** Upgraded from Later to Essential. The trigger was the
+> kp-soft.dev website: Kenny got stuck on most of its puzzles, and the
+> question "is this puzzle solvable by a person" is exactly what this
+> report measures. Human-solvable is defined as binarypuzzle.com's
+> corpus shows it: one solution, reachable without guessing (levels
+> L1-L3). The report lists every puzzle that falls outside that, with
+> its file and line.
+
 ## Later
 
-### M27 · Printable output (PDF or HTML sheets)
+### feat-sheets-1 · Printable output (PDF or HTML sheets)
 Printable grids — e.g. six 10x10 puzzles per sheet with solutions
 overleaf. Parked until the intended use is clear; commits to a
-rendering stack.
-
-### M29 · Difficulty distribution report
-Reads an existing corpus and reports tier distribution, clue-count
-spread and dominant strategies per tier. Meaningful only once corpora
-exist and tier definitions have settled.
+rendering stack. Kept at Later on 2026-09-26.
 
 ## Decision log
 
 | Date | Decision |
 |---|---|
 | 2026-08-12 | Round 1 (K20–K31, scope-derived): all Essential |
-| 2026-08-12 | Round 2 (M20–M29, Claude's proposals): M20 Essential; M21–M26, M28 Desired (M24 upgraded from Later by Kenny); M27, M29 Later |
+| 2026-08-12 | Round 2 (M20–M28 plus the two now called feat-sheets-1 and feat-report-1, Claude's proposals): M20 Essential; M21–M26, M28 Desired (M24 upgraded from Later by Kenny); feat-sheets-1, feat-report-1 Later |
+| 2026-09-26 | Decision round after the Windows run: feat-report-1 Later → Essential; feat-sheets-1 stays Later |
 | 2026-08-12 | List frozen (freeze report R1–R3 approved) |
 | 2026-08-12 | Phase 4 mini-rounds: K24/K25 difficulty scale redefined onto binsolve's ladder (L1–L4); M20 reproducibility conditioned on the starting corpus; M21 collisions resolved by deterministic re-roll; M26 cancellation as the exception to all-or-nothing batches |
 | 2026-08-12 | K23/K28 acknowledged as blocked on binsolve mini-rounds B2 (custom geometry) and B3 (rectangular regions) — "no Rust change" holds for binforge, not for binsolve, until B2 lands |

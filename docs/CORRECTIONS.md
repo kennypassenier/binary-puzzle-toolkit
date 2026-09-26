@@ -3,9 +3,10 @@
 Live-found faults, one record each, per the correction form in
 `~/Projects/dev-procedure/FORM_PROTOCOL.md` §8.
 
-## rename-retry · the Windows rename retry never runs for a locked file
+## fix-1 · rename-retry: the Windows rename retry never runs for a locked file
 
-Status: proposed 2026-09-26, awaiting Kenny's answer.
+Status: approved by Kenny 2026-09-26 ("Klopt"); build queued after
+feat-report-1. Measurement open until the next release's Windows run.
 
 1. **What went wrong.** `bpt solve --out out.txt` with `out.txt` held
    open by another process fails with `Access is denied. (os error 5)`

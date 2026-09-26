@@ -69,6 +69,9 @@ The run found that a locked destination fails with `os error 5`, not
 the sharing violation the rename retry waits for, so that retry never
 runs in the case it was written for.
 
+Kenny decided on 2026-09-26 that Windows stays beta: section 7 remains
+open until someone runs it at a screen.
+
 **Why accepted.** Kenny works on Garuda; Windows is carried because it
 could be, not because it is used. Note that the Windows runner did earn
 its place on 2026-08-29 by catching two real failures invisible locally

@@ -10,8 +10,8 @@ feature. IDs are permanent and appear in commits and test names.
 | Rating | Count | IDs |
 |---|---|---|
 | Essential | 17 | K1 K2a-e K3 K4 K5 K6 K7 K8 K9 K10 K12 K13 K14 K15 M3 M4 M7 |
-| Desired | 5 | K11 K16 M1 M2 M5 |
-| Later | 1 | M6 |
+| Desired | 6 | K11 K16 M1 M2 M5 feat-json-1 |
+| Later | 0 | — |
 | Don't do | 0 | — |
 
 ## Essential
@@ -213,8 +213,11 @@ plus `git config core.hooksPath .githooks`.
 ### Ecosystem integration — open
 Deferred to its own round: see `docs/PENDING_MINI_ROUNDS.md`.
 
-## Later
+## Desired (added after release)
 
-### M6 · JSON output mode
+### feat-json-1 · JSON output mode
 `--json`: one JSON object per puzzle (grid, status, time, difficulty,
 trace). No consumer today; revisit if the new website wants it.
+
+> **Amendment 2026-09-26.** Upgraded from Later to Desired by Kenny, to
+> be built after the rename-retry correction (fix-1) is released.

@@ -1,4 +1,4 @@
-//! M6: the geometry inspector's rendering, pinned as snapshots so an
+//! M25: the geometry inspector's rendering, pinned as snapshots so an
 //! accidental change to the map is visible in review rather than silent.
 
 use bpt_forge::geometry::{Geometry, builtin};
