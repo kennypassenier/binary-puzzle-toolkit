@@ -86,6 +86,15 @@ never to make a failing check pass without looking at why.
 4. Confirm CI is green on the commit being tagged.
 5. `bpt --version` shows the intended release and a revision without
    `-dirty`.
+6. Push an annotated tag `vX.Y.Z` on that commit; the Release workflow
+   builds the Linux and Windows archives and `SHA256SUMS`.
+7. When that run is green, on the machine holding the minisign key:
+   `scripts/sign-release.sh vX.Y.Z`. It signs `SHA256SUMS` with the
+   ecosystem key (one password prompt), verifies the signature and
+   uploads `SHA256SUMS.minisig`. A release without it is unsigned.
+
+Verify a download: `minisign -V -P RWQWCzzUBquIHGkS3YERMkuqEm4C3vBArnlb9rySbr8z5ytgVYuji3bS -m SHA256SUMS -x SHA256SUMS.minisig`,
+then `sha256sum -c SHA256SUMS --ignore-missing`.
 
 ## 7 · What to do when a generation run will not finish
 
