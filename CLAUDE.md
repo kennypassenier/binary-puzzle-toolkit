@@ -16,7 +16,7 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 | Current phase | 10 done — all eleven phases complete. v1.0.0 released 2026-08-30 from 62f971b; v1.1.0 released 2026-09-26 from ca0f918 |
 | Last completed gate | phase 10 retrospective (2026-08-30): six lessons adopted, committed to dev-procedure as 000c03e |
 | Next gate | none — the project is released. New work starts a mini-round or a new cycle |
-| Next action | waiting on the Garuda list: v1.1.0 is signed by steps 1-2 of ~/Projects/workstation/GARUDA.md (key migration into the secrets sync, then `scripts/sign-release.sh v1.1.0`). v1.1.0 released 2026-09-26, fix-1 closed by measurement. The kp-soft puzzle work is handed to a kp-soft thread |
+| Next action | nothing in progress. v1.1.0 released 2026-09-26 and signed (signature verified 2026-09-27); fix-1 closed by measurement. Open by decision: Windows section 7 (beta), feat-sheets-1 (Later). The kp-soft puzzle work lives in a kp-soft thread |
 | AFK mode | OFF since 2026-08-29 — the queue was presented and cleared |
 
 <!-- Update this block after every completed gate. -->
