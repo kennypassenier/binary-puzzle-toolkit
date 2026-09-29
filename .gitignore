@@ -1,1 +1,4 @@
 /target
+/dist
+/target-release-linux
+/target-release-windows

@@ -2,7 +2,7 @@
 # Sign a release's checksum manifest with Kenny's ecosystem minisign key
 # and upload the signature, the same scheme the chassis-based projects
 # use. The key never leaves the machine that holds it, so this runs by
-# hand after the Release workflow has published SHA256SUMS:
+# hand after scripts/release.sh has published SHA256SUMS:
 #
 #   scripts/sign-release.sh v1.1.0
 #
@@ -25,7 +25,7 @@ done
 
 echo "downloading SHA256SUMS of $tag from $repo"
 gh release download "$tag" --repo "$repo" -p SHA256SUMS -D "$work"
-[ -s "$work/SHA256SUMS" ] || { echo "the release has no SHA256SUMS yet. What now: wait for the Release workflow to finish." >&2; exit 1; }
+[ -s "$work/SHA256SUMS" ] || { echo "the release has no SHA256SUMS yet. What now: run scripts/release.sh for this tag first." >&2; exit 1; }
 
 echo "signing (minisign will ask for the key password)"
 minisign -S -s "$key" -m "$work/SHA256SUMS" -x "$work/SHA256SUMS.minisig" -t "$repo $tag"
