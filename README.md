@@ -14,8 +14,8 @@ with a manifest that can rebuild them, and independent validation of
 every generated puzzle through the solver. There is no published binary
 yet — build from source.
 
-Windows is **partly runtime-verified**: CI compiles and runs the whole
-suite there, and on 2026-09-26 the v1.0.0 release binaries passed the
+Windows is **partly runtime-verified**: `scripts/check.sh` compiles the
+whole suite for Windows and runs it there (through WSL), and on 2026-09-26 the v1.0.0 release binaries passed the
 scripted part of
 [the checklist](docs/solve/WINDOWS_TEST_CHECKLIST.md) on a real Windows
 11 machine. The console and TUI section still needs a person at the

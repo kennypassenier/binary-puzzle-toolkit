@@ -27,10 +27,10 @@ Two layers, both enforcing the same rules:
 | `.githooks/pre-commit` | any terminal, any tool | `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test --workspace` |
 | `.githooks/commit-msg` | any terminal, any tool | message must carry feature IDs in brackets, e.g. `[K5, AR9]` or `[meta]` |
 | `.claude/hooks/check-commit.sh` | Claude Code sessions opened in this directory | the same two checks, as a second layer |
-| GitHub Actions (`ci.yml`) | every push and pull request | the same gates on Ubuntu, Windows and an Arch container, plus a check that the solver core has no runtime dependencies |
+| `scripts/check.sh` | by hand, and first in every `scripts/release.sh` | the same gates, plus the whole suite on real Windows (cross-built with cargo-xwin, run through WSL interop) |
 
-`main` is protected: all four CI checks must pass, and force-pushes and
-branch deletion are refused.
+Nothing runs on GitHub Actions since 2026-09-29 (Kenny: every build and
+check runs locally). `main` refuses force-pushes and branch deletion.
 
 ## Running the tests
 

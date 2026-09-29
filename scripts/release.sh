@@ -6,7 +6,7 @@
 #   git tag vX.Y.Z && scripts/release.sh vX.Y.Z      # then sign-release.sh
 #   DRY_RUN=1 scripts/release.sh vX.Y.Z              # build + verify, upload nothing
 #
-# 1. the gates and the performance thresholds;
+# 1. scripts/check.sh (what CI ran) and the performance thresholds;
 # 2. bpt + bpt-tui for x86_64-unknown-linux-gnu, built in rust:1-bookworm so
 #    the binary runs on an older glibc than this machine's, and for
 #    x86_64-pc-windows-msvc, cross-built with cargo-xwin in its docker image
@@ -31,10 +31,8 @@ if [ "${DRY_RUN:-0}" != 1 ]; then
 fi
 for tool in docker gh zip; do command -v "$tool" >/dev/null || { echo "release: $tool is not installed" >&2; exit 1; }; done
 
-echo "== gates"
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+echo "== scripts/check.sh (gates + the suite on Windows)"
+scripts/check.sh
 echo "== performance thresholds"
 cargo test --release -p bpt-core --test thresholds -- --nocapture
 cargo test --release -p bpt-forge --test thresholds -- --nocapture
