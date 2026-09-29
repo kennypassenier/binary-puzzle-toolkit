@@ -11,10 +11,18 @@
 # (scripts/windows-tests.sh); on Garuda it refuses unless WINDOWS_TESTS=skip.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
+# One full test run per release (Kenny, 2026-09-29): the commit gate stamps
+# the tree it saw green (workstation/bin/gate-stamp); on exactly that tree
+# the same checks are not run again.
+gate_fresh() { [ -x "$HOME/Projects/workstation/bin/gate-stamp" ] && "$HOME/Projects/workstation/bin/gate-stamp" fresh; }
 echo "[1/2] gates: fmt, clippy -D warnings, tests"
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+if gate_fresh; then
+  echo "  already green on this tree at commit (gate-stamp)"
+else
+  cargo fmt --all -- --check
+  cargo clippy --workspace --all-targets -- -D warnings
+  cargo test --workspace
+fi
 echo "[2/2] the suite on Windows"
 if [ "${WINDOWS_TESTS:-}" = skip ]; then
   echo "  SKIPPED on request (WINDOWS_TESTS=skip)"

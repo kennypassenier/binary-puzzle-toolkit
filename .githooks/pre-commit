@@ -12,7 +12,16 @@ if [ ! -x "$gates" ]; then
   exit 1
 fi
 
-if ! out=$(cd "$root" && "$gates" 2>&1); then
+# One full test run per release (Kenny, 2026-09-29): workstation's
+# gate-stamp skips the suite for a commit that only moves the version, and
+# stamps a green tree so the release does not test it again. Without
+# workstation the gates simply run.
+gate_stamp="$HOME/Projects/workstation/bin/gate-stamp"
+run_gates() {
+  if [ -x "$gate_stamp" ]; then "$gate_stamp" hook "$gates" 'Cargo.toml:^version = ' 'Cargo.lock:^version = ' 'CHANGELOG.md:.*'; else "$gates"; fi
+}
+
+if ! out=$(cd "$root" && run_gates 2>&1); then
   {
     echo "COMMIT BLOCKED — gates failed (standing rule 7). Fix, then retry."
     echo "$out" | tail -30
