@@ -256,7 +256,11 @@ fn fits_ceiling(candidate: &Puzzle, ceiling: Level) -> bool {
                 3 => Level::L2,
                 _ => Level::L3,
             };
+            // Up to L2 the promise is "by hand": the puzzle must finish
+            // with named techniques only (feat-human-1), which is
+            // stricter than the ladder's own L2.
             reached <= ceiling
+                && (ceiling > Level::L2 || bpt_core::hand::solvable_by_hand(candidate))
         }
         // Stalled: solvable but not without guessing, which is L4.
         SolveOutcome::Stuck { .. } => ceiling == Level::L4,

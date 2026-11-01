@@ -68,7 +68,7 @@ you can hand it to someone without an answer key.
 | `--geometry FILE` | a layout no name can describe — overlapping or side-by-side regions |
 | `--count` | how many |
 | `--seed` | the same seed always produces the same puzzles |
-| `--level` | L1 to L4, the hardest reasoning a solver should need |
+| `--level` | L1 to L4, the hardest reasoning a solver should need. Default L2: up to L2 every puzzle is also checked to finish by hand |
 | `--clues N` | stop carving once N clues remain |
 | `--symmetry` | `rotational` (half turn) or `mirror` (left to right) |
 | `--out FILE` | one line per puzzle |
@@ -175,9 +175,13 @@ many. Each puzzle lands in one row:
 | undecided (budget) | the uniqueness search hit `--budget` nodes before it could answer |
 | invalid line | the line does not parse, or does not fit `--geometry` |
 
-"Solvable by a person" means one solution reachable without guessing:
-L1 to L3. Every binarypuzzle.com puzzle in `corpus/` is. Every puzzle
-outside that is listed with its file and line, all of them.
+"Solvable by a person" means one solution reachable with the by-hand
+techniques only (`bpt-core/src/hand.rs`): Pair, Gap and FullCount (L1),
+UniqueLine and Capacity (L2). Each step has a reason a person can state
+and check. A puzzle that is only reachable by writing a line out in every
+legal way (L3) or by guessing (L4) is not solvable by a person. 16 of the
+20 binarypuzzle.com puzzles in `corpus/` are; the other 4 are L3. Every
+puzzle outside the set is listed with its file and line, all of them.
 
 Exit codes: 0 every puzzle is solvable by a person · 1 at least one is
 not · 2 usage or file error. That makes the report usable as a check on

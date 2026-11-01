@@ -102,3 +102,32 @@ fn k25_targeting_a_level_produces_that_level_or_easier() {
         }
     }
 }
+
+#[test]
+fn feat_human_1_a_level_up_to_l2_always_finishes_by_hand() {
+    // The promise behind the default ceiling: whatever carve returns at
+    // L1 or L2 finishes with named techniques only, on a plain grid and
+    // on a composite one.
+    let mut cases = vec![("6", 0..12u64), ("8", 0..8)];
+    if !cfg!(debug_assertions) {
+        cases.push(("4x6x6", 0..4));
+    }
+    for (tag, seeds) in cases {
+        let (n, regions) = geometry(tag);
+        for ceiling in [Level::L1, Level::L2] {
+            for seed in seeds.clone() {
+                let mut rng = stream(31, seed, 0);
+                let solution = fill::solution(n, &regions, &mut rng).unwrap();
+                let out = carve(&solution, &regions, ceiling, &mut rng);
+                let puzzle = Puzzle::custom(out.puzzle, regions.clone());
+                let by_hand = bpt_core::hand::solve_by_hand(&puzzle);
+                assert!(
+                    by_hand.solved,
+                    "{tag} {} seed {seed}: not solvable by hand",
+                    ceiling.name()
+                );
+                assert_eq!(by_hand.steps.len(), n * n - puzzle.givens.filled_count());
+            }
+        }
+    }
+}

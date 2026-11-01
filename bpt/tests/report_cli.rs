@@ -31,14 +31,16 @@ fn stdout(out: &Output) -> String {
 const EASY6: &str = "1..0....00.1.00..1......00.1...1..00";
 
 #[test]
-fn feat_report_1_every_binarypuzzle_com_puzzle_is_solvable_by_a_person() {
+fn feat_human_1_the_corpus_splits_into_by_hand_and_enumeration() {
     let corpus = Path::new(env!("CARGO_MANIFEST_DIR")).join("../corpus");
     let out = report(&[&corpus]);
     let text = stdout(&out);
-    assert_eq!(out.status.code(), Some(0), "{text}");
+    // Four of binarypuzzle.com's very hard puzzles are only reachable
+    // through line enumeration: no guessing, but not by hand either.
+    assert_eq!(out.status.code(), Some(1), "{text}");
     assert!(text.starts_with("20 puzzle(s) from 20 file(s); skipped 20 solution line(s)"));
-    assert!(text.contains("solvable by a person (one solution, no guessing): 20 of 20"));
-    assert!(!text.contains("not solvable by a person:"));
+    assert!(text.contains("solvable by a person (one solution, no guessing): 16 of 20"));
+    assert!(text.contains("not solvable by a person:"));
 }
 
 #[test]

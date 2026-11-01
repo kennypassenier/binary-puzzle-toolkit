@@ -386,7 +386,7 @@ fn m22_a_parallel_batch_equals_a_sequential_one() {
     let plan = bpt_forge::batch::Plan::new(
         6,
         vec![bpt_core::region::Region::square(0, 0, 6)],
-        bpt_forge::grade::Level::L4,
+        bpt_forge::grade::Level::L2,
         4242,
         24,
     );

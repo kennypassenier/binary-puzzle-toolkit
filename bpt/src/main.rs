@@ -129,8 +129,10 @@ struct ForgeArgs {
     #[arg(long, default_value_t = 0)]
     seed: u64,
 
-    /// Hardest level to allow: L1, L2, L3 or L4
-    #[arg(long, default_value = "L4")]
+    /// Hardest level to allow: L1, L2, L3 or L4. The default, L2, is the
+    /// hardest level a person solves by hand; L3 needs line enumeration
+    /// and L4 guessing, so both must be asked for
+    #[arg(long, default_value = "L2")]
     level: String,
 
     /// Write the puzzles here instead of to standard output

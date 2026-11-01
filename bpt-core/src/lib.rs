@@ -6,6 +6,7 @@
 
 pub mod event;
 pub mod grid;
+pub mod hand;
 pub mod parse;
 pub mod region;
 pub mod search;

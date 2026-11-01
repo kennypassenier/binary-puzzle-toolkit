@@ -8,7 +8,7 @@
 //! location, because a website serving such a puzzle is the fault this
 //! report exists to catch.
 
-use crate::grade::{Level, level_for_tier};
+use crate::grade::Level;
 use bpt_core::event::{EventLog, NullObserver, SolveEvent};
 use bpt_core::region::Puzzle;
 use bpt_core::search::{SolveMode, SolveOutcome, solve, solve_within};
@@ -42,16 +42,20 @@ pub enum Verdict {
 }
 
 impl Verdict {
-    /// One solution, no guessing: what a person can finish with logic.
+    /// One solution, no guessing, and no step that needs a line written
+    /// out in every legal way: what a person finishes with logic and a
+    /// pencil, and what a hint can explain in a sentence. L3 is reachable
+    /// without guessing, but only through enumeration, so it does not
+    /// count (feat-human-1).
     pub fn human_solvable(&self) -> bool {
-        matches!(self, Verdict::Level(_))
+        matches!(self, Verdict::Level(Level::L1 | Level::L2))
     }
 
     pub fn label(&self) -> &'static str {
         match self {
             Verdict::Level(Level::L1) => "L1 patterns and counts",
             Verdict::Level(Level::L2) => "L2 cross-line reasoning",
-            Verdict::Level(Level::L3) => "L3 line enumeration",
+            Verdict::Level(Level::L3) => "L3 needs line enumeration",
             Verdict::Level(Level::L4) | Verdict::NeedsGuessing => "L4 needs guessing",
             Verdict::NotUnique => "not unique",
             Verdict::NoSolution => "no solution",
@@ -115,8 +119,17 @@ pub fn assess(location: String, puzzle: &Puzzle, budget: u64) -> Entry {
     let size = puzzle.givens.size();
     let clues = puzzle.givens.filled_count();
     let mut log = EventLog::default();
+    let by_hand = bpt_core::hand::solve_by_hand(puzzle);
     let verdict = match solve(puzzle, SolveMode::StrategiesOnly, &mut log) {
-        SolveOutcome::Solved { stats, .. } => Verdict::Level(level_for_tier(stats.max_tier)),
+        // The hand solver is the definition of "by a person": whatever it
+        // finishes is L1 or L2, whatever only the full ladder finishes is
+        // enumeration.
+        SolveOutcome::Solved { .. } if by_hand.solved => Verdict::Level(if by_hand.level() <= 1 {
+            Level::L1
+        } else {
+            Level::L2
+        }),
+        SolveOutcome::Solved { .. } => Verdict::Level(Level::L3),
         SolveOutcome::Contradiction { .. } => Verdict::NoSolution,
         _ => match solve_within(
             puzzle,
@@ -260,6 +273,13 @@ mod tests {
         let v = verdict_of("1..0....00.1.00..1......00.1...1..00");
         assert_eq!(v, Verdict::Level(Level::L1));
         assert!(v.human_solvable());
+    }
+
+    #[test]
+    fn feat_human_1_enumeration_and_guessing_are_not_solvable_by_a_person() {
+        assert!(Verdict::Level(Level::L2).human_solvable());
+        assert!(!Verdict::Level(Level::L3).human_solvable());
+        assert!(!Verdict::NeedsGuessing.human_solvable());
     }
 
     #[test]
