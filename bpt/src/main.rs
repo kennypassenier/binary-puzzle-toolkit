@@ -5,6 +5,7 @@
 mod atomic;
 mod output;
 mod parallel;
+mod steps;
 
 use anyhow::{Context, Result, bail};
 use bpt_core::event::{EventLog, NullObserver, Observer, format_trace};
@@ -71,6 +72,22 @@ enum Command {
     /// Report how hard a collection of puzzles is, and list every one a
     /// person cannot solve
     Report(ReportArgs),
+    /// Solve one puzzle by hand and print every step with its reason
+    Steps(StepsArgs),
+}
+
+/// feat-human-1.
+#[derive(Parser, Debug)]
+#[command(after_help = "Exit status: 0 when the puzzle is solvable by hand, \
+1 when it is not, 2 on a usage error.")]
+struct StepsArgs {
+    /// Puzzle line, e.g. "1..0.0..." or "4x8x8:110..."
+    puzzle: String,
+
+    /// Read the regions from a geometry file, for puzzles whose type has
+    /// no name the line format can carry
+    #[arg(long, value_name = "FILE")]
+    geometry: Option<PathBuf>,
 }
 
 /// feat-report-1. Levels: L1 needs only local patterns and line counts
@@ -247,6 +264,7 @@ fn dispatch() -> Result<u8> {
         Command::Forge(args) => run_forge(args),
         Command::Inspect(args) => run_inspect(args),
         Command::Report(args) => run_report(args),
+        Command::Steps(args) => run_steps(args),
     }
 }
 
@@ -958,6 +976,34 @@ fn run_inspect(args: InspectArgs) -> Result<u8> {
     print!("{}", bpt_forge::inspect::render(&geometry));
     std::io::stdout().flush().ok();
     Ok(EXIT_OK)
+}
+
+/// feat-human-1: the by-hand solution of one puzzle, step by step.
+fn run_steps(args: StepsArgs) -> Result<u8> {
+    let parsed =
+        parse_line(&args.puzzle).map_err(|e| anyhow::anyhow!("cannot read the puzzle: {e}"))?;
+    let puzzle = match &args.geometry {
+        Some(path) => {
+            let geometry = read_geometry(path)?;
+            if parsed.givens.size() != geometry.size {
+                bail!(
+                    "the puzzle is {0}x{0} but the geometry is {1}x{1}",
+                    parsed.givens.size(),
+                    geometry.size
+                );
+            }
+            Puzzle::custom(parsed.givens.clone(), geometry.to_regions())
+        }
+        None => parsed,
+    };
+    let result = bpt_core::hand::solve_by_hand(&puzzle);
+    print!("{}", steps::render(&result));
+    std::io::stdout().flush().ok();
+    Ok(if result.solved {
+        EXIT_OK
+    } else {
+        EXIT_SOME_FAILED
+    })
 }
 
 /// feat-report-1: gather located puzzle lines, assess them in parallel,

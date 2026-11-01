@@ -88,3 +88,31 @@ fn feat_report_1_no_puzzle_lines_is_a_usage_error_with_a_remedy() {
     assert!(err.contains("no puzzle lines found in 0 file(s)"), "{err}");
     assert!(err.contains("one puzzle per line"), "{err}");
 }
+
+#[test]
+fn feat_human_1_steps_lists_every_step_with_its_reason() {
+    let out = Command::new(BIN)
+        .args(["steps", EASY6])
+        .output()
+        .expect("binary runs");
+    let text = stdout(&out);
+    assert_eq!(out.status.code(), Some(0), "{text}");
+    assert!(text.contains("   1. "));
+    assert!(text.contains("[Pair]"));
+    assert!(text.trim_end().ends_with("steps"));
+    assert!(text.contains("solved by hand in "));
+    // Every printed step carries a technique and a reason.
+    let steps: Vec<&str> = text.lines().filter(|l| l.contains(". r")).collect();
+    assert!(!steps.is_empty());
+    assert!(steps.iter().all(|l| l.contains('[') && l.contains("  ")));
+}
+
+#[test]
+fn feat_human_1_steps_exits_1_when_the_puzzle_is_not_solvable_by_hand() {
+    let out = Command::new(BIN)
+        .args(["steps", &".".repeat(36)])
+        .output()
+        .expect("binary runs");
+    assert_eq!(out.status.code(), Some(1));
+    assert!(stdout(&out).contains("NOT solvable by hand"));
+}
