@@ -25,18 +25,36 @@ The published 4x6x6, 4x8x8 and 4x10x10 are the two-level pyramids, and
 
 ## Measured
 
-Generated with `bpt forge --geometry`, default ceiling L2 (by-hand gate):
+Generated with `bpt forge --geometry --level L2` (the by-hand gate), one
+seed per run with a 150 s cap, 12 runs at a time on 16 cores. All
+`bpt report --geometry` verdicts: every puzzle L2, every puzzle solvable by
+hand.
 
-| Layout | Puzzles | Time | Solvable by hand (`bpt report`) |
+| Layout (size, step, smallest) | Regions | Seeds that finished | Puzzles solvable by hand |
 |---|---|---|---|
-| 18, step 6 | 20 | 7 s | 20 of 20 |
-| 20, step 10 | 20 | 50 s | 20 of 20 |
-| 16, step 4 (seeds 1-3, L2) | 3 | 1 s, 55 s, 21 s | 3 of 3 |
-| 24, step 8 (seeds 1-3, L2) | 2 of 3 | 52 s, 54 s, third over 60 s | 2 of 2 |
-| 24, step 6 (seeds 1-3, L2) | 1 of 3 | 9 s, two over 60 s | 1 of 1 |
+| 18, 6, 6 | 14 | 60 of 60 (7 s and 26 s per 30) | 60 of 60 |
+| 12, 4, 8 | 5 | 40 of 40 | 40 of 40 |
+| 16, 4, 8 | 14 | 15 of 40 | 15 of 15 |
+| 24, 8, 8 | 14 | 19 of 40 | 19 of 19 |
+| 24, 6, 6 | 30 | 21 of 40 | 21 of 21 |
+| 20, 10, 10 | 5 | 40 of 40 (equals 4x10x10) | 40 of 40 |
 
-The denser layouts are feasible and hand-solvable; the cost is generation
-time (up to about a minute per puzzle at 30 regions), not solvability.
+195 puzzles in total, 195 solvable by hand. Ten of each new layout are
+kept in `variants/` with their geometry in `geometries/`, and
+`feat_human_1_every_variant_puzzle_is_solvable_by_hand` re-checks them.
+
+The dense layouts (14 and 30 regions) finish about half of the seeds in
+150 s; the rest are slow, not impossible. At level L1 the 16x16 pyramid
+did not finish a batch of 30 in 49 minutes, so these layouts are L2-only
+in practice.
+
+## Not resolved
+
+- Step 2 lattices (14, 2, 6 and 16, 2, 8: 55 regions) and 20, 4, 12 (14
+  regions): no solution found in 200-300 s, including with almost no
+  carving. Feasibility is open, not disproved.
+- Block sizes with an odd step (18, 3, 6) are refused by the script: a
+  line cannot balance on an odd side.
 
 ## Not built: every square at every offset
 

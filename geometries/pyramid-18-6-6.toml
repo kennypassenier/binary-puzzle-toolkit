@@ -1,0 +1,87 @@
+# Window pyramid: size 18, step 6, smallest square 6.
+# Every square on the 6-lattice with a side that is a multiple of 6 is a region.
+size = 18
+
+[[regions]]
+row = 0
+col = 0
+rows = 18
+cols = 18
+
+[[regions]]
+row = 0
+col = 0
+rows = 12
+cols = 12
+
+[[regions]]
+row = 0
+col = 6
+rows = 12
+cols = 12
+
+[[regions]]
+row = 6
+col = 0
+rows = 12
+cols = 12
+
+[[regions]]
+row = 6
+col = 6
+rows = 12
+cols = 12
+
+[[regions]]
+row = 0
+col = 0
+rows = 6
+cols = 6
+
+[[regions]]
+row = 0
+col = 6
+rows = 6
+cols = 6
+
+[[regions]]
+row = 0
+col = 12
+rows = 6
+cols = 6
+
+[[regions]]
+row = 6
+col = 0
+rows = 6
+cols = 6
+
+[[regions]]
+row = 6
+col = 6
+rows = 6
+cols = 6
+
+[[regions]]
+row = 6
+col = 12
+rows = 6
+cols = 6
+
+[[regions]]
+row = 12
+col = 0
+rows = 6
+cols = 6
+
+[[regions]]
+row = 12
+col = 6
+rows = 6
+cols = 6
+
+[[regions]]
+row = 12
+col = 12
+rows = 6
+cols = 6

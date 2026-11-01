@@ -116,3 +116,28 @@ fn feat_human_1_steps_exits_1_when_the_puzzle_is_not_solvable_by_hand() {
     assert_eq!(out.status.code(), Some(1));
     assert!(stdout(&out).contains("NOT solvable by hand"));
 }
+
+#[test]
+fn feat_human_1_every_variant_puzzle_is_solvable_by_hand() {
+    // variants/<name>.txt belongs to geometries/<name>.toml: window
+    // pyramids, where every square the blocks can form is a region.
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+    let mut checked = 0;
+    for entry in fs::read_dir(root.join("variants")).unwrap() {
+        let file = entry.unwrap().path();
+        let name = file.file_stem().unwrap().to_string_lossy().into_owned();
+        let geometry = root.join("geometries").join(format!("{name}.toml"));
+        let out = Command::new(BIN)
+            .arg("report")
+            .arg("--geometry")
+            .arg(&geometry)
+            .arg(&file)
+            .output()
+            .expect("binary runs");
+        let text = stdout(&out);
+        assert_eq!(out.status.code(), Some(0), "{name}: {text}");
+        assert!(text.contains("of 10\n"), "{name}: {text}");
+        checked += 1;
+    }
+    assert_eq!(checked, 5);
+}
