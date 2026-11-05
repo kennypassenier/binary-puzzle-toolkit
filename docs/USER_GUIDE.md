@@ -195,6 +195,24 @@ bpt watch "1..0.0..1...0..1.1....0....1.0..11.." --speed 20
 
 Replays the solve step by step in the terminal.
 
+## Solving by hand, step by step
+
+```
+$ bpt steps "1..0....00.1.00..1......00.1...1..00"
+   1. r2c2 = 1  [Pair]  r2c3 and r2c4 are both 0: a third 0 would make three in a row
+   2. r2c5 = 1  [Pair]  r2c3 and r2c4 are both 0: a third 0 would make three in a row
+   ...
+  22. r5c6 = 1  [Gap]  r4c6 and r6c6 are both 0 with one cell between: that cell cannot be 0 too
+solved by hand in 22 steps
+```
+
+`bpt steps PUZZLE` solves one puzzle with the by-hand strategies only and
+prints every step with its reason. It accepts the same puzzle lines as
+`solve`, and `--geometry FILE` for a type whose regions the line cannot carry.
+Exit status: 0 when the puzzle is solvable by hand, 1 when it is not, 2 on
+a usage error (`bpt steps --help`). This is the check `bpt forge` applies at
+its default level L2.
+
 ## When generation is slow
 
 Generating grows steeply with size. Measured on a fast machine, one

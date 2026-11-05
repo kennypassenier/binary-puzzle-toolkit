@@ -83,12 +83,17 @@ never to make a failing check pass without looking at why.
    geometry validated in bulk through the binary.
 3. `cargo test --release -p bpt-forge --test thresholds` — the speed
    promises.
-4. Confirm CI is green on the commit being tagged.
+4. There is no CI; `scripts/release.sh` runs `scripts/check.sh` and the
+   speed thresholds itself, so run `scripts/check.sh` first if you want the
+   verdict before tagging.
 5. `bpt --version` shows the intended release and a revision without
    `-dirty`.
-6. Push an annotated tag `vX.Y.Z` on that commit; the Release workflow
-   builds the Linux and Windows archives and `SHA256SUMS`.
-7. When that run is green, on the machine holding the minisign key:
+6. Tag the commit `vX.Y.Z` and run `scripts/release.sh vX.Y.Z` on this
+   machine (`DRY_RUN=1` builds and verifies, uploads nothing). It builds the
+   Linux and Windows archives and `SHA256SUMS` in docker, pushes the tag and
+   creates a draft release with the changelog as its body. Nothing builds on
+   GitHub Actions.
+7. When that has finished, on the machine holding the minisign key:
    `scripts/sign-release.sh vX.Y.Z`. It signs `SHA256SUMS` with the
    ecosystem key (one password prompt), verifies the signature and
    uploads `SHA256SUMS.minisig`. A release without it is unsigned.

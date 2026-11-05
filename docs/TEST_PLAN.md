@@ -32,10 +32,16 @@ history; where the two disagree, this one is current.
 | Restore drill | `bpt/tests/restore_drill.rs` | a committed batch rebuilt from its manifest alone, byte for byte |
 | Invented types | `bpt/tests/invented_types.rs` | types defined only as data, generated and solved end to end |
 
-CI additionally runs the D1 sweep (a batch of every geometry validated
-through the binary), the restore drill from a fresh `git clone`, the
-purity check (no I/O, threads or clock in either library), the
-zero-dependency check on the core, and coverage as information.
+The GitHub Actions workflow that also ran the D1 sweep (a batch of every
+geometry validated through the binary), the restore drill from a fresh
+`git clone`, the purity check (no I/O, threads or clock in either library),
+the zero-dependency check on the core and coverage as information was
+removed in 2026-09-29. What runs now: `scripts/check.sh` (fmt, clippy, the
+suite, the suite on Windows) and the speed thresholds, both inside
+`scripts/release.sh`; the D1 sweep by hand
+(`cargo test --release -p bpt --test validation -- --ignored`,
+OPERATIONS_RUNBOOK §6). No script in this repository runs the purity check,
+the zero-dependency check or coverage; they are not enforced today.
 
 ## Not covered, by decision
 
@@ -70,7 +76,7 @@ rendering and the TUI) needs a person at the screen and is still open.
 The run found that a locked destination fails with `os error 5`, not
 the sharing violation the rename retry waits for, so that retry never
 ran in the case it was written for. Fixed as fix-1 (see
-docs/CORRECTIONS.md); the Windows CI job now holds a real lock.
+docs/CORRECTIONS.md); the Windows test run now holds a real lock.
 
 Kenny decided on 2026-09-26 that Windows stays beta: section 7 remains
 open until someone runs it at a screen.

@@ -12,9 +12,9 @@ here; the decisions themselves are recorded in
 | `bpt-core` | grid, regions, rules, the text format, strategies, the search | nothing at all |
 | `bpt-forge` | geometry, filling, carving, grading, batch planning | `bpt-core`, rand, serde |
 | `bpt-tui` | the replay viewer's render model | `bpt-core`, ratatui |
-| `bpt` | one binary: `solve`, `forge`, `watch`, `inspect` | all of the above |
+| `bpt` | one binary: `solve`, `forge`, `watch`, `inspect`, `report`, `steps` | all of the above |
 
-Two rules hold this apart, and CI enforces both. `bpt-core` has an empty
+Two rules hold this apart (they were enforced in CI until 2026-09-29; see TEST_PLAN for what runs now). `bpt-core` has an empty
 dependency list — not "few dependencies", empty. And neither library
 contains file access, threads, printing or any clock read: all of that
 lives in the binary. The clock ban is stricter than it looks and is

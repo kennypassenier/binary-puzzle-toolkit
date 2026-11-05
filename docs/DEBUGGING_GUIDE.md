@@ -59,12 +59,12 @@ sequence reproduces on its own.
 
 A whole batch comes back from its manifest alone, and the restore drill
 in `bpt/tests/restore_drill.rs` does exactly that against a committed
-fixture on every CI run.
+fixture on every full test run.
 
 ## When a change makes things slower
 
 `benchmarks/baseline.json` holds a measured median and p95 per geometry.
-CI re-measures the affordable ones and fails when the p95 drifts too
+The thresholds tests (`bpt-core` and `bpt-forge`, run by `scripts/release.sh`) re-measure the affordable ones and fail when the p95 drifts too
 far. To re-record deliberately:
 
 ```

@@ -11,8 +11,10 @@ other: the solver (binsolve) and the generator (binforge).
 Status: **both halves are built, tested and hardened.** Solving and
 generating are complete, including invented composite types, batches
 with a manifest that can rebuild them, and independent validation of
-every generated puzzle through the solver. There is no published binary
-yet — build from source.
+every generated puzzle through the solver. Release archives for Linux and
+Windows, with a minisign signature, are attached to the GitHub releases
+(`docs/OPERATIONS_RUNBOOK.md` §6); `main` can be ahead of the last release,
+and building from source always gives the newest.
 
 Windows is **partly runtime-verified**: `scripts/check.sh` compiles the
 whole suite for Windows and runs it there (through WSL), and on 2026-09-26 the v1.0.0 release binaries passed the
@@ -69,10 +71,12 @@ it is:
 bpt report corpus/
 ```
 
-Watch a puzzle being solved step by step:
+Watch a puzzle being solved step by step, or print the by-hand steps with
+their reasons:
 
 ```
 bpt watch "1..0....00.1.00..1......00.1...1..00"
+bpt steps "1..0....00.1.00..1......00.1...1..00"
 ```
 
 ## Contributing / working on this repo

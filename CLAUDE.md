@@ -28,7 +28,7 @@ This project follows the dev procedure in `~/Projects/dev-procedure/`
 | `bpt-core` | grid, regions, rules, the text format, strategies, search — zero runtime dependencies |
 | `bpt-forge` | geometry, fill, carve, grading: the generator |
 | `bpt-tui` | the replay viewer's render model |
-| `bpt` | one binary: `bpt solve`, `bpt forge`, `bpt watch`, `bpt inspect`, `bpt report` |
+| `bpt` | one binary: `bpt solve`, `bpt forge`, `bpt watch`, `bpt inspect`, `bpt report`, `bpt steps` |
 
 ## Project documents
 
